@@ -18,9 +18,16 @@ import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.0
 import AGL.Demo.Controls 1.0
+import 'api' as API
 
 ApplicationWindow {
     id: root
+
+    API.Binding {
+        id: binding
+        url: bindingAddress
+        onFanSpeedChanged: fanSpeedSlider.value = fanSpeed
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -35,17 +42,17 @@ ApplicationWindow {
             Item {
                 width: root.width * 0.8
                 Slider {
-                    id: fanSpeed
+                    id: fanSpeedSlider
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     onValueChanged: {
-                        console.debug('Fan', value)
+                        binding.fanSpeed = value
                     }
                 }
                 Label {
-                    anchors.left: fanSpeed.left
-                    anchors.top: fanSpeed.bottom
+                    anchors.left: fanSpeedSlider.left
+                    anchors.top: fanSpeedSlider.bottom
                     font.pixelSize: 32
                     text: 'FAN SPEED'
                 }

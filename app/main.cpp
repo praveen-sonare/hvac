@@ -15,8 +15,11 @@
  */
 
 #include <QtCore/QDebug>
+#include <QtCore/QCommandLineParser>
+#include <QtCore/QUrlQuery>
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlApplicationEngine>
+#include <QtQml/QQmlContext>
 #include <QtQuickControls2/QQuickStyle>
 
 #ifdef HAVE_LIBHOMESCREEN
@@ -35,10 +38,37 @@ int main(int argc, char *argv[])
 #endif
 
     QGuiApplication app(argc, argv);
+    app.setApplicationName(QStringLiteral("HVAC"));
+    app.setApplicationVersion(QStringLiteral("0.1.0"));
+    app.setOrganizationDomain(QStringLiteral("automotivelinux.org"));
+    app.setOrganizationName(QStringLiteral("AutomotiveGradeLinux"));
 
     QQuickStyle::setStyle("AGL");
 
+    QCommandLineParser parser;
+    parser.addPositionalArgument("port", app.translate("main", "port for binding"));
+    parser.addPositionalArgument("secret", app.translate("main", "secret for binding"));
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.process(app);
+    QStringList positionalArguments = parser.positionalArguments();
+
+
     QQmlApplicationEngine engine;
+    if (positionalArguments.length() == 2) {
+        int port = positionalArguments.takeFirst().toInt();
+        QString secret = positionalArguments.takeFirst();
+        QUrl bindingAddress;
+        bindingAddress.setScheme(QStringLiteral("ws"));
+        bindingAddress.setHost(QStringLiteral("localhost"));
+        bindingAddress.setPort(port);
+        bindingAddress.setPath(QStringLiteral("/api"));
+        QUrlQuery query;
+        query.addQueryItem(QStringLiteral("token"), secret);
+        bindingAddress.setQuery(query);
+        QQmlContext *context = engine.rootContext();
+        context->setContextProperty(QStringLiteral("bindingAddress"), bindingAddress);
+    }
     engine.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
 
     return app.exec();
