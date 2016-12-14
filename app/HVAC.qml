@@ -46,6 +46,9 @@ ApplicationWindow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
+                    from: 0.0
+                    to: 255.0
+                    stepSize: 1.0
                     onValueChanged: {
                         binding.fanSpeed = value
                     }
@@ -72,6 +75,10 @@ ApplicationWindow {
                 }
                 HeatDegree {
                     enabled: leftSeat.headLevel > 0
+                    onCurrentItemChanged: {
+                        console.log("Left Temp changed",degree)
+                        binding.leftTemperature = degree
+                    }
                 }
             }
             ColumnLayout {
@@ -121,6 +128,10 @@ ApplicationWindow {
                 }
                 HeatDegree {
                     enabled: rightSeat.headLevel > 0
+                    onCurrentItemChanged: {
+                        console.log("Right Temp changed",degree)
+                        binding.rightTemperature = degree
+                    }
                 }
             }
         }

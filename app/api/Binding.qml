@@ -25,11 +25,23 @@ WebSocket {
     property string statusString: "waiting..."
 
     property real fanSpeed: 0.0
+    property real leftTemperature: 21.0
+    property real rightTemperature: 21.0
 
     property Connections c : Connections {
         target: root
         onFanSpeedChanged: {
             var json = [MessageId.call, '9999', 'hvac/set', {'FanSpeed': fanSpeed}]
+            console.debug(JSON.stringify(json))
+            sendTextMessage(JSON.stringify(json))
+        }
+        onLeftTemperatureChanged: {
+            var json = [MessageId.call, '9999', 'hvac/set', {'LeftTemperature': leftTemperature}]
+            console.debug(JSON.stringify(json))
+            sendTextMessage(JSON.stringify(json))
+        }
+        onRightTemperatureChanged: {
+            var json = [MessageId.call, '9999', 'hvac/set', {'RightTemperature': rightTemperature}]
             console.debug(JSON.stringify(json))
             sendTextMessage(JSON.stringify(json))
         }
@@ -39,11 +51,12 @@ WebSocket {
         var json = JSON.parse(message)
         var request = json[2].request
         var response = json[2].response
+        console.log("HVAC Binding Message: ",message)
         switch (json[0]) {
         case MessageId.call:
             break
         case MessageId.retok:
-            root.statusString = request.info
+            root.statusString = request.status
             break
         case MessageId.reterr:
             root.statusString = "Bad return value, binding probably not installed"
