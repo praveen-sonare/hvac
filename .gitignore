@@ -1,1 +1,6 @@
 *.pro.*
+.*.sw*
+.qmake.*
+app/config.log
+package/*.wgt
+package/root/
