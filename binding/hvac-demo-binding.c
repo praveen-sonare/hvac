@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <linux/can.h>
+#include <math.h>
 
 #include <json-c/json.h>
 
@@ -159,12 +160,17 @@ static int write_can()
 		txCanFrame.data[6] = 0;
 		txCanFrame.data[7] = 0;
 
+		DEBUG(interface, "%s: %d %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
 #if defined(SIMULATE_HVAC)
-		DEBUG(interface, "WRITING CAN: %d %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
+			"FAKE CAN FRAME",
+#else
+			"SENDING CAN FRAME",
+#endif
 			txCanFrame.can_id, txCanFrame.can_dlc,
 			txCanFrame.data[0], txCanFrame.data[1], txCanFrame.data[2], txCanFrame.data[3],
 			txCanFrame.data[4], txCanFrame.data[5], txCanFrame.data[6], txCanFrame.data[7]);
-#else
+
+#if !defined(SIMULATE_HVAC)
 		rc = sendto(can_handler.socket, &txCanFrame, sizeof(struct can_frame), 0,
 			(struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
 		if (rc < 0)
@@ -269,6 +275,7 @@ static void get(struct afb_req request)
 static void set(struct afb_req request)
 {
 	int i, rc, x, changed;
+	double d;
 	struct json_object *query, *val;
 	uint8_t values[sizeof hvac_values / sizeof *hvac_values];
 	uint8_t saves[sizeof hvac_values / sizeof *hvac_values];
@@ -292,15 +299,21 @@ static void set(struct afb_req request)
 		DEBUG(interface, "Searching... query: %s, i: %d, comp: %s", json_object_to_json_string(query), i, hvac_values[i].name);
 		if (json_object_object_get_ex(query, hvac_values[i].name, &val))
 		{
-			DEBUG(interface, "We got it. Tests if it is an int or not.");
-			if (!json_object_is_type(val, json_type_int))
-			{
+			DEBUG(interface, "We got it. Tests if it is an int or double.");
+			if (json_object_is_type(val, json_type_int)) {
+				x = json_object_get_int(val);
+				DEBUG(interface, "We get an int: %d",x);
+			}
+			else if (json_object_is_type(val, json_type_double)) {
+				d = json_object_get_double(val);
+				x = (int)round(d);
+				DEBUG(interface, "We get a double: %f => %d",d,x);
+			}
+			else {
 				afb_req_fail_f(request, "bad-request",
-					"argument '%s' isn't integer", hvac_values[i].name);
+					"argument '%s' isn't integer or double", hvac_values[i].name);
 				return;
 			}
-			DEBUG(interface, "We get an 'int'. Hail for the int: %d", x);
-			x = json_object_get_int(val);
 			if (x < 0 || x > 255)
 			{
 				afb_req_fail_f(request, "bad-request",
@@ -310,9 +323,12 @@ static void set(struct afb_req request)
 			if (values[i] != x) {
 				values[i] = (uint8_t)x;
 				changed = 1;
+				DEBUG(interface,"%s changed to %d",hvac_values[i].name,x);
 			}
 		}
-		DEBUG(interface, "Not found !");
+		else {
+			DEBUG(interface, "%s not found in query!",hvac_values[i].name);
+		}
 	}
 
 	/* attemps to set new values */
