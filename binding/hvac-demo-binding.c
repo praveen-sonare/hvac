@@ -31,11 +31,55 @@
 #include <afb/afb-binding.h>
 #include <afb/afb-service-itf.h>
 
+// Uncomment this line to pass into can simulation mode
+//#define SIMULATE_HVAC
+
 #define CAN_DEV "vcan0"
 
-#define SIMULATE_HVAC
-
 static const struct afb_binding_interface *interface;
+
+/*****************************************************************************************/
+/*****************************************************************************************/
+/**											**/
+/**											**/
+/**	   SECTION: UTILITY FUNCTIONS							**/
+/**											**/
+/**											**/
+/*****************************************************************************************/
+/*****************************************************************************************/
+
+/*
+ * @brief Retry a function 3 times
+ *
+ * @param int function(): function that return an int wihtout any parameter
+ *
+ * @ return : 0 if ok, -1 if failed
+ *
+ */
+static int retry( int(*func)())
+{
+	int i;
+
+	for (i=0;i<4;i++)
+	{
+		if ( (*func)() >= 0)
+		{
+			return 0;
+		}
+		usleep(100000);
+	}
+	return -1;
+}
+
+/*****************************************************************************************/
+/*****************************************************************************************/
+/**											**/
+/**											**/
+/**	   SECTION: HANDLE CAN DEVICE							**/
+/**											**/
+/**											**/
+/*****************************************************************************************/
+/*****************************************************************************************/
 
 // Initialize CAN hvac array that will be sent trough the socket
 static struct {
@@ -55,16 +99,6 @@ struct can_handler {
 
 static struct can_handler can_handler = { .socket = -1 };
 
-/*****************************************************************************************/
-/*****************************************************************************************/
-/**											**/
-/**											**/
-/**	   SECTION: HANDLE CAN DEVICE							**/
-/**											**/
-/**											**/
-/*****************************************************************************************/
-/*****************************************************************************************/
-
 static int open_can_dev()
 {
 #if defined(SIMULATE_HVAC)
@@ -73,6 +107,9 @@ static int open_can_dev()
 	return 0;
 #else
 	struct ifreq ifr;
+
+	DEBUG(interface, "CAN Handler socket : %d", can_handler.socket);
+	close(can_handler.socket);
 
 	can_handler.socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 	if (can_handler.socket < 0)
@@ -175,13 +212,15 @@ static int write_can()
 			(struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
 		if (rc < 0)
 		{
-			ERROR(interface, "Sending can frame failed");
+			ERROR(interface, "Sending can frame failed. Attempt to reopen can device socket.");
+			retry(open_can_dev);
 		}
 #endif
 	}
 	else
 	{
-		ERROR(interface, "socket not initialized");
+		ERROR(interface, "socket not initialized. Attempt to reopen can device socket.");
+		retry(open_can_dev);
 	}
 	return rc;
 }
@@ -343,7 +382,7 @@ static void set(struct afb_req request)
 		rc = write_can();
 		if (rc >= 0)
 			afb_req_success(request, NULL, NULL);
-		else {
+		else if (retry(write_can)) {
 			/* restore initial values */
 			i = (int)(sizeof hvac_values / sizeof *hvac_values);
 			while (i) {
@@ -386,5 +425,5 @@ const struct afb_binding *afbBindingV1Register (const struct afb_binding_interfa
 
 int afbBindingV1ServiceInit(struct afb_service service)
 {
-	return open_can_dev();
+	return retry(open_can_dev);
 }
