@@ -137,7 +137,7 @@ static uint8_t read_temp()
 
 static uint8_t read_fanspeed()
 {
-	return hvac_values[3].value;
+	return hvac_values[3].value ^ 0xFF;
 }
 
 static int write_can()
