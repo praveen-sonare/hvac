@@ -148,7 +148,7 @@ static int open_can_dev()
 // Get original get temperature function from cpp hvacplugin code
 static uint8_t to_can_temp(uint8_t value)
 {
-	int result = ((0xF0 - 0x10) / 15) * value - 16;
+	int result = ((0xF0 - 0x10) / 15) * (value - 15) + 0x10;
 	if (result < 0x10)
 		result = 0x10;
 	if (result > 0xF0)
