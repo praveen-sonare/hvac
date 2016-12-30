@@ -1,7 +1,9 @@
 /*
  * Copyright (C) 2015, 2016 "IoT.bzh"
+ * Copyright (C) 2016 Konsulko Group
  * Author "Romain Forlot"
  * Author "Jose Bolo"
+ * Author "Scott Murray <scott.murray@konsulko.com>"
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +20,7 @@
 #define _GNU_SOURCE
 
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -30,9 +33,6 @@
 
 #include <afb/afb-binding.h>
 #include <afb/afb-service-itf.h>
-
-// Uncomment this line to pass into can simulation mode
-//#define SIMULATE_HVAC
 
 #define CAN_DEV "vcan0"
 
@@ -94,18 +94,15 @@ static struct {
 
 struct can_handler {
 	int socket;
+	bool simulation;
+	char *send_msg;
 	struct sockaddr_can txAddress;
 };
 
-static struct can_handler can_handler = { .socket = -1 };
+static struct can_handler can_handler = { .socket = -1, .simulation = false, .send_msg = "SENDING CAN FRAME"};
 
-static int open_can_dev()
+static int open_can_dev_helper()
 {
-#if defined(SIMULATE_HVAC)
-	DEBUG(interface, "Defining can handler socket to 0 and return");
-	can_handler.socket = 0;
-	return 0;
-#else
 	struct ifreq ifr;
 
 	DEBUG(interface, "CAN Handler socket : %d", can_handler.socket);
@@ -142,7 +139,20 @@ static int open_can_dev()
 		can_handler.socket = -1;
 	}
 	return -1;
-#endif
+}
+
+static int open_can_dev()
+{
+	int rc = retry(open_can_dev_helper);
+	if(rc < 0)
+	{
+		ERROR(interface, "Open of interface %s failed. Falling back to simulation mode", CAN_DEV);
+		can_handler.socket = 0;
+		can_handler.simulation = true;
+		can_handler.send_msg = "FAKE CAN FRAME";
+		rc = 0;
+	}
+	return rc;
 }
 
 // Get original get temperature function from cpp hvacplugin code
@@ -198,29 +208,25 @@ static int write_can()
 		txCanFrame.data[7] = 0;
 
 		DEBUG(interface, "%s: %d %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
-#if defined(SIMULATE_HVAC)
-			"FAKE CAN FRAME",
-#else
-			"SENDING CAN FRAME",
-#endif
+			can_handler.send_msg,
 			txCanFrame.can_id, txCanFrame.can_dlc,
 			txCanFrame.data[0], txCanFrame.data[1], txCanFrame.data[2], txCanFrame.data[3],
 			txCanFrame.data[4], txCanFrame.data[5], txCanFrame.data[6], txCanFrame.data[7]);
 
-#if !defined(SIMULATE_HVAC)
-		rc = sendto(can_handler.socket, &txCanFrame, sizeof(struct can_frame), 0,
-			(struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
-		if (rc < 0)
+		if(!can_handler.simulation)
 		{
-			ERROR(interface, "Sending can frame failed. Attempt to reopen can device socket.");
-			retry(open_can_dev);
+			rc = sendto(can_handler.socket, &txCanFrame, sizeof(struct can_frame), 0,
+				    (struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
+			if (rc < 0)
+			{
+				ERROR(interface, "Sending CAN frame failed.");
+			}
 		}
-#endif
 	}
 	else
 	{
 		ERROR(interface, "socket not initialized. Attempt to reopen can device socket.");
-		retry(open_can_dev);
+		open_can_dev();
 	}
 	return rc;
 }
@@ -425,5 +431,5 @@ const struct afb_binding *afbBindingV1Register (const struct afb_binding_interfa
 
 int afbBindingV1ServiceInit(struct afb_service service)
 {
-	return retry(open_can_dev);
+	return open_can_dev();
 }
