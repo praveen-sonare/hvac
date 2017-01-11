@@ -74,7 +74,6 @@ ApplicationWindow {
                     side: 'Left'
                 }
                 HeatDegree {
-                    enabled: leftSeat.headLevel > 0
                     onCurrentItemChanged: {
                         console.log("Left Temp changed",degree)
                         binding.leftTemperature = degree
@@ -127,7 +126,6 @@ ApplicationWindow {
                     side: 'Right'
                 }
                 HeatDegree {
-                    enabled: rightSeat.headLevel > 0
                     onCurrentItemChanged: {
                         console.log("Right Temp changed",degree)
                         binding.rightTemperature = degree
