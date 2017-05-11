@@ -4,3 +4,9 @@
 app/config.log
 package/*.wgt
 package/root/
+Makefile
+*/Makefile
+*/*.o
+*/*.sh
+app/config.tests/*
+app/qrc*.cpp

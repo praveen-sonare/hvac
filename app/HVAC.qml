@@ -94,6 +94,13 @@ ApplicationWindow {
                     }
                     onCheckedChanged: {
                         console.debug('A/C', checked)
+                        console.debug('acbinding:', binding.acEnabled)
+                        if (checked) {
+                            binding.acEnabled=255
+                        } else {
+                            binding.acEnabled=0
+                        }
+                        console.debug('acbinding:', binding.acEnabled)
                     }
                 }
                 ToggleButton {

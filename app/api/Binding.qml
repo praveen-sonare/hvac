@@ -27,9 +27,15 @@ WebSocket {
     property real fanSpeed: 0.0
     property real leftTemperature: 21.0
     property real rightTemperature: 21.0
+    property real acEnabled: 0.0
 
     property Connections c : Connections {
         target: root
+        onAcEnabledChanged: {
+            var json = [MessageId.call, '9999', 'hvac/set_acenabled', {'ACEnabled': acEnabled}]
+            console.debug(JSON.stringify(json))
+            sendTextMessage(JSON.stringify(json))
+        }
         onFanSpeedChanged: {
             var json = [MessageId.call, '9999', 'hvac/set', {'FanSpeed': fanSpeed}]
             console.debug(JSON.stringify(json))

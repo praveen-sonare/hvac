@@ -19,6 +19,7 @@
  */
 #define _GNU_SOURCE
 
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -35,6 +36,7 @@
 #include <afb/afb-service-itf.h>
 
 #define CAN_DEV "vcan0"
+#define LED_BRIGHTNESS "/sys/class/leds/blinkm-3-9-red/brightness"
 
 static const struct afb_binding_interface *interface;
 
@@ -89,7 +91,8 @@ static struct {
 	{ "LeftTemperature", 21 },
 	{ "RightTemperature", 21 },
 	{ "Temperature", 21 },
-	{ "FanSpeed", 0 }
+	{ "FanSpeed", 0 },
+	{ "ACEnabled", 0 }
 };
 
 struct can_handler {
@@ -187,6 +190,28 @@ static uint8_t read_fanspeed()
 	return hvac_values[3].value;
 }
 
+static uint8_t read_acenabled()
+{
+	WARNING(interface, "in read_acenabled: value= %d", hvac_values[4].value);
+	return hvac_values[4].value;
+}
+
+static int write_led()
+{
+    int rc = 0;
+
+    // /sys/class/leds/blinkm-3-9-red/brightness
+    FILE* f = fopen(LED_BRIGHTNESS, "w");
+    if (f == NULL) {
+        ERROR(interface, "Unable to open path for writing");
+        rc=1;
+    }
+
+    fprintf(f, "%d", read_acenabled());
+    fclose(f);
+    return rc;
+}
+
 static int write_can()
 {
 	struct can_frame txCanFrame;
@@ -240,6 +265,26 @@ static int write_can()
 /**											**/
 /*****************************************************************************************/
 /*****************************************************************************************/
+
+/*
+ * @brief Get fan speed HVAC system
+ *
+ * @param struct afb_req : an afb request structure
+ *
+ */
+static void get_acenabled(struct afb_req request)
+{
+	json_object *ret_json;
+
+	uint8_t acenabled = read_acenabled();
+	WARNING(interface, "in get_acenabled: acenabled= %d", acenabled);
+
+	ret_json = json_object_new_object();
+	json_object_object_add(ret_json, "ACEnabled", json_object_new_int(acenabled));
+
+	afb_req_success(request, ret_json, NULL);
+}
+
 
 /*
  * @brief Get fan speed HVAC system
@@ -307,8 +352,81 @@ static void get(struct afb_req request)
 	json_object_object_add(ret_json, "LeftTemperature", json_object_new_int(read_temp_left_zone()));
 	json_object_object_add(ret_json, "RightTemperature", json_object_new_int(read_temp_right_zone()));
 	json_object_object_add(ret_json, "FanSpeed", json_object_new_int(read_fanspeed()));
+	json_object_object_add(ret_json, "ACEnabled", json_object_new_int(read_acenabled()));
 
 	afb_req_success(request, ret_json, NULL);
+}
+
+static void set_acenabled(struct afb_req request)
+{
+	int i=4, rc, x, changed;
+	double d;
+	struct json_object *query, *val;
+	uint8_t values[sizeof hvac_values / sizeof *hvac_values];
+	uint8_t saves[sizeof hvac_values / sizeof *hvac_values];
+
+	WARNING(interface, "in set_acenabled.");
+
+	query = afb_req_json(request);
+
+	/* records initial values */
+	WARNING(interface, "Records initial values");
+	values[i] = saves[i] = hvac_values[i].value;
+
+
+	if (json_object_object_get_ex(query, hvac_values[i].name, &val))
+	{
+		WARNING(interface, "We got it. Tests if it is an int or double.");
+		if (json_object_is_type(val, json_type_int)) {
+			x = json_object_get_int(val);
+			WARNING(interface, "We get an int: %d",x);
+		}
+		else if (json_object_is_type(val, json_type_double)) {
+			d = json_object_get_double(val);
+			x = (int)round(d);
+			WARNING(interface, "We get a double: %f => %d",d,x);
+		}
+		else {
+			afb_req_fail_f(request, "bad-request",
+				"argument '%s' isn't integer or double", hvac_values[i].name);
+			return;
+		}
+		if (x < 0 || x > 255)
+		{
+			afb_req_fail_f(request, "bad-request",
+				"argument '%s' is out of bounds", hvac_values[i].name);
+			return;
+		}
+		if (values[i] != x) {
+			values[i] = (uint8_t)x;
+			changed = 1;
+			WARNING(interface,"%s changed to %d",hvac_values[i].name,x);
+		}
+	}
+	else {
+		WARNING(interface, "%s not found in query!",hvac_values[i].name);
+	}
+
+	if (changed)
+	{
+		i = 4; //(int)(sizeof hvac_values / sizeof *hvac_values);
+		hvac_values[i].value = values[i];
+		WARNING(interface, "WRITE_LED: value: %d ",hvac_values[i].value);
+		rc = write_led();
+		if (rc >= 0)
+			afb_req_success(request, NULL, NULL);
+		else if (retry(write_led)) {
+			/* restore initial values */
+			i = 4; //(int)(sizeof hvac_values / sizeof *hvac_values);
+			hvac_values[i].value = saves[i];
+			afb_req_fail(request, "error", "I2C error");
+		}
+	}
+	else {
+		afb_req_success(request, NULL, "No changes");
+	}
+
+
 }
 
 /*
@@ -408,8 +526,10 @@ static const struct afb_verb_desc_v1 verbs[]= {
 	{"get_temp_left_zone"	 , AFB_SESSION_NONE, get_temp_left_zone	, "Get the left zone temperature"},
 	{"get_temp_right_zone"	 , AFB_SESSION_NONE, get_temp_right_zone	, "Get the right zone temperature"},
 	{"get_fanspeed"	 , AFB_SESSION_NONE, get_fanspeed	, "Read fan speed"},
+	{"get_acenabled"	 , AFB_SESSION_NONE, get_acenabled	, "Read fan speed"},
 	{"get"	 , AFB_SESSION_NONE, get	, "Read all values"},
 	{"set"	 , AFB_SESSION_NONE, set	, "Set a HVAC component value"},
+	{"set_acenabled"	 , AFB_SESSION_NONE, set_acenabled	, "Set a HVAC component value"},
 	{NULL}
 };
 
