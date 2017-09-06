@@ -31,8 +31,8 @@
 
 #include <json-c/json.h>
 
+#define AFB_BINDING_VERSION   1
 #include <afb/afb-binding.h>
-#include <afb/afb-service-itf.h>
 
 #define CAN_DEV "vcan0"
 
@@ -105,13 +105,13 @@ static int open_can_dev_helper()
 {
 	struct ifreq ifr;
 
-	DEBUG(interface, "CAN Handler socket : %d", can_handler.socket);
+	AFB_DEBUG(interface, "CAN Handler socket : %d", can_handler.socket);
 	close(can_handler.socket);
 
 	can_handler.socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 	if (can_handler.socket < 0)
 	{
-		ERROR(interface, "socket could not be created");
+		AFB_ERROR(interface, "socket could not be created");
 	}
 	else
 	{
@@ -119,7 +119,7 @@ static int open_can_dev_helper()
 		strcpy(ifr.ifr_name, CAN_DEV);
 		if(ioctl(can_handler.socket, SIOCGIFINDEX, &ifr) < 0)
 		{
-			ERROR(interface, "ioctl failed");
+			AFB_ERROR(interface, "ioctl failed");
 		}
 		else
 		{
@@ -129,7 +129,7 @@ static int open_can_dev_helper()
 			// And bind it to txAddress
 			if (bind(can_handler.socket, (struct sockaddr *)&can_handler.txAddress, sizeof(can_handler.txAddress)) < 0)
 			{
-				ERROR(interface, "bind failed");
+				AFB_ERROR(interface, "bind failed");
 			}
 			else {
 				return 0;
@@ -146,7 +146,7 @@ static int open_can_dev()
 	int rc = retry(open_can_dev_helper);
 	if(rc < 0)
 	{
-		ERROR(interface, "Open of interface %s failed. Falling back to simulation mode", CAN_DEV);
+		AFB_ERROR(interface, "Open of interface %s failed. Falling back to simulation mode", CAN_DEV);
 		can_handler.socket = 0;
 		can_handler.simulation = true;
 		can_handler.send_msg = "FAKE CAN FRAME";
@@ -207,7 +207,7 @@ static int write_can()
 		txCanFrame.data[6] = 0;
 		txCanFrame.data[7] = 0;
 
-		DEBUG(interface, "%s: %d %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
+		AFB_DEBUG(interface, "%s: %d %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
 			can_handler.send_msg,
 			txCanFrame.can_id, txCanFrame.can_dlc,
 			txCanFrame.data[0], txCanFrame.data[1], txCanFrame.data[2], txCanFrame.data[3],
@@ -219,13 +219,13 @@ static int write_can()
 				    (struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
 			if (rc < 0)
 			{
-				ERROR(interface, "Sending CAN frame failed.");
+				AFB_ERROR(interface, "Sending CAN frame failed.");
 			}
 		}
 	}
 	else
 	{
-		ERROR(interface, "socket not initialized. Attempt to reopen can device socket.");
+		AFB_ERROR(interface, "socket not initialized. Attempt to reopen can device socket.");
 		open_can_dev();
 	}
 	return rc;
@@ -300,7 +300,7 @@ static void get_temp_left_zone(struct afb_req request)
  */
 static void get(struct afb_req request)
 {
-	DEBUG(interface, "Getting all values");
+	AFB_DEBUG(interface, "Getting all values");
 	json_object *ret_json;
 
 	ret_json = json_object_new_object();
@@ -326,7 +326,7 @@ static void set(struct afb_req request)
 	uint8_t saves[sizeof hvac_values / sizeof *hvac_values];
 
 	/* records initial values */
-	DEBUG(interface, "Records initial values");
+	AFB_DEBUG(interface, "Records initial values");
 	i = (int)(sizeof hvac_values / sizeof *hvac_values);
 	while (i) {
 		i--;
@@ -337,22 +337,22 @@ static void set(struct afb_req request)
 	query = afb_req_json(request);
 	changed = 0;
 	i = (int)(sizeof hvac_values / sizeof *hvac_values);
-	DEBUG(interface, "Looping for args. i: %d", i);
+	AFB_DEBUG(interface, "Looping for args. i: %d", i);
 	while (i)
 	{
 		i--;
-		DEBUG(interface, "Searching... query: %s, i: %d, comp: %s", json_object_to_json_string(query), i, hvac_values[i].name);
+		AFB_DEBUG(interface, "Searching... query: %s, i: %d, comp: %s", json_object_to_json_string(query), i, hvac_values[i].name);
 		if (json_object_object_get_ex(query, hvac_values[i].name, &val))
 		{
-			DEBUG(interface, "We got it. Tests if it is an int or double.");
+			AFB_DEBUG(interface, "We got it. Tests if it is an int or double.");
 			if (json_object_is_type(val, json_type_int)) {
 				x = json_object_get_int(val);
-				DEBUG(interface, "We get an int: %d",x);
+				AFB_DEBUG(interface, "We get an int: %d",x);
 			}
 			else if (json_object_is_type(val, json_type_double)) {
 				d = json_object_get_double(val);
 				x = (int)round(d);
-				DEBUG(interface, "We get a double: %f => %d",d,x);
+				AFB_DEBUG(interface, "We get a double: %f => %d",d,x);
 			}
 			else {
 				afb_req_fail_f(request, "bad-request",
@@ -368,16 +368,16 @@ static void set(struct afb_req request)
 			if (values[i] != x) {
 				values[i] = (uint8_t)x;
 				changed = 1;
-				DEBUG(interface,"%s changed to %d",hvac_values[i].name,x);
+				AFB_DEBUG(interface,"%s changed to %d",hvac_values[i].name,x);
 			}
 		}
 		else {
-			DEBUG(interface, "%s not found in query!",hvac_values[i].name);
+			AFB_DEBUG(interface, "%s not found in query!",hvac_values[i].name);
 		}
 	}
 
 	/* attemps to set new values */
-	DEBUG(interface, "Diff: %d", changed);
+	AFB_DEBUG(interface, "Diff: %d", changed);
 	if (changed)
 	{
 		i = (int)(sizeof hvac_values / sizeof *hvac_values);
