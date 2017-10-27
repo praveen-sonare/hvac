@@ -21,24 +21,16 @@
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
 #include <QtQuickControls2/QQuickStyle>
-
-#ifdef HAVE_LIBHOMESCREEN
+#include <QQuickWindow>
 #include <libhomescreen.hpp>
-#endif
+#include "qlibwindowmanager.h"
 
 int main(int argc, char *argv[])
 {
-#ifdef HAVE_LIBHOMESCREEN
-    LibHomeScreen libHomeScreen;
-
-    if (!libHomeScreen.renderAppToAreaAllowed(0, 1)) {
-        qWarning() << "renderAppToAreaAllowed is denied";
-        return -1;
-    }
-#endif
+    std::string myname = std::string("HVAC");
 
     QGuiApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("HVAC"));
+    app.setApplicationName(myname.c_str());
     app.setApplicationVersion(QStringLiteral("0.1.0"));
     app.setOrganizationDomain(QStringLiteral("automotivelinux.org"));
     app.setOrganizationName(QStringLiteral("AutomotiveGradeLinux"));
@@ -52,7 +44,6 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.process(app);
     QStringList positionalArguments = parser.positionalArguments();
-
 
     QQmlApplicationEngine engine;
     if (positionalArguments.length() == 2) {
@@ -68,9 +59,46 @@ int main(int argc, char *argv[])
         bindingAddress.setQuery(query);
         QQmlContext *context = engine.rootContext();
         context->setContextProperty(QStringLiteral("bindingAddress"), bindingAddress);
-    }
-    engine.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
 
+        std::string token = secret.toStdString();
+        LibHomeScreen* hs = new LibHomeScreen();
+        QLibWindowmanager* qwm = new QLibWindowmanager();
+
+        // WindowManager
+        if(qwm->init(port,secret) != 0){
+            exit(EXIT_FAILURE);
+        }
+        if (qwm->requestSurface(json_object_new_string(myname.c_str())) != 0) {
+            exit(EXIT_FAILURE);
+        }
+        qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object *object) {
+            fprintf(stderr, "Surface got syncDraw!\n");
+            qwm->endDraw(json_object_new_string(myname.c_str()));
+        });
+
+        // HomeScreen
+        hs->init(port, token.c_str());
+        hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
+            qDebug("object %s", json_object_to_json_string(object));
+            json_object *appnameJ = nullptr;
+            if(json_object_object_get_ex(object, "application_name", &appnameJ))
+            {
+                const char *appname = json_object_get_string(appnameJ);
+                qDebug("appnameJ %s", json_object_to_json_string(appnameJ));
+                if(myname == appname)
+                {
+                    qDebug("Surface %s got tapShortcut\n", appname);
+                    qwm->activateSurface(json_object_new_string(myname.c_str()));
+                }
+            }
+        });
+
+        engine.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
+        QObject *root = engine.rootObjects().first();
+        QQuickWindow *window = qobject_cast<QQuickWindow *>(root);
+        QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()
+        ));
+    }
     return app.exec();
 }
 
