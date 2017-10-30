@@ -4,3 +4,6 @@
 app/config.log
 package/*.wgt
 package/root/
+build/
+.vscode/
+xds-project.conf
