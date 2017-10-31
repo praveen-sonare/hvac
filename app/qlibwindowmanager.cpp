@@ -32,14 +32,9 @@ int QLibWindowmanager::requestSurface(json_object *label) {
 }
 
 int QLibWindowmanager::activateSurface(json_object *label) {
-    qDebug() << "activateSurface applabel: " << applabel.c_str();
     json_object *obj = json_object_new_object();
-    qDebug() << "DrawingName: " << wm->kKeyDrawingName;
     json_object_object_add(obj, wm->kKeyDrawingName, label);
-    qDebug() << "DrawingArea: " << wm->kKeyDrawingArea;
     json_object_object_add(obj, wm->kKeyDrawingArea, json_object_new_string("normal.full"));
-    qDebug() << "obj pointer: " << obj;
-    qDebug() << "activateSurface end obj: " << json_object_get_string(obj);
 
     return this->wm->activateSurface(obj);
 }
@@ -52,7 +47,6 @@ int QLibWindowmanager::deactivateSurface(json_object *label) {
 
 int QLibWindowmanager::endDraw(json_object *label) {
     json_object *obj = json_object_new_object();
-    qDebug() << "endDraw label: " << json_object_get_string(label);
     json_object_object_add(obj, wm->kKeyDrawingName, label);
     return this->wm->endDraw(obj);
     }
@@ -67,7 +61,6 @@ void QLibWindowmanager::slotActivateSurface(){
     if(!isActive){
         qDebug("Let's show HVAC");
         isActive = true;
-        qDebug() << "slotActivateSurface applabel: " << applabel.c_str();
         this->activateSurface(json_object_new_string(applabel.c_str()));
     }
 }
