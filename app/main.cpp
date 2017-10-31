@@ -68,9 +68,11 @@ int main(int argc, char *argv[])
         if(qwm->init(port,secret) != 0){
             exit(EXIT_FAILURE);
         }
+        // Request a surface as described in layers.json windowmanager’s file
         if (qwm->requestSurface(json_object_new_string(myname.c_str())) != 0) {
             exit(EXIT_FAILURE);
         }
+        // Create an event callback against an event type. Here a lambda is called when SyncDraw event occurs
         qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object *object) {
             fprintf(stderr, "Surface got syncDraw!\n");
             qwm->endDraw(json_object_new_string(myname.c_str()));
@@ -78,6 +80,7 @@ int main(int argc, char *argv[])
 
         // HomeScreen
         hs->init(port, token.c_str());
+        // Set the event handler for Event_TapShortcut which will activate the surface for windowmanager
         hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
             qDebug("object %s", json_object_to_json_string(object));
             json_object *appnameJ = nullptr;
