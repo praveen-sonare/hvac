@@ -1,11 +1,10 @@
 TARGET = hvac
-QT = quickcontrols2
+QT = quickcontrols2 qml
 
-HEADERS = qlibwindowmanager.h
-SOURCES = main.cpp qlibwindowmanager.cpp
+SOURCES = main.cpp
 
 CONFIG += link_pkgconfig
-PKGCONFIG += libhomescreen libwindowmanager
+PKGCONFIG += libhomescreen libwindowmanager qlibwindowmanager qlibhomescreen
 
 RESOURCES += \
     hvac.qrc \
