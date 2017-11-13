@@ -23,14 +23,13 @@
 #include <QtQuickControls2/QQuickStyle>
 #include <QQuickWindow>
 #include <libhomescreen.hpp>
-#include "qlibwindowmanager.h"
+#include <qlibwindowmanager.h>
 
 int main(int argc, char *argv[])
 {
-    std::string myname = std::string("HVAC");
+    QString myname = QString("HVAC");
 
     QGuiApplication app(argc, argv);
-    app.setApplicationName(myname.c_str());
     app.setApplicationVersion(QStringLiteral("0.1.0"));
     app.setOrganizationDomain(QStringLiteral("automotivelinux.org"));
     app.setOrganizationName(QStringLiteral("AutomotiveGradeLinux"));
@@ -69,29 +68,27 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
         // Request a surface as described in layers.json windowmanager’s file
-        if (qwm->requestSurface(json_object_new_string(myname.c_str())) != 0) {
+        if (qwm->requestSurface(myname) != 0) {
             exit(EXIT_FAILURE);
         }
-        // Create an event callback against an event type. Here a lambda is called when SyncDraw event occurs
+        // Create an event callbnewack against an event type. Here a lambda is called when SyncDraw event occurs
         qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object *object) {
             fprintf(stderr, "Surface got syncDraw!\n");
-            qwm->endDraw(json_object_new_string(myname.c_str()));
+            qwm->endDraw(myname);
         });
 
         // HomeScreen
         hs->init(port, token.c_str());
         // Set the event handler for Event_TapShortcut which will activate the surface for windowmanager
         hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
-            qDebug("object %s", json_object_to_json_string(object));
             json_object *appnameJ = nullptr;
             if(json_object_object_get_ex(object, "application_name", &appnameJ))
             {
                 const char *appname = json_object_get_string(appnameJ);
-                qDebug("appnameJ %s", json_object_to_json_string(appnameJ));
                 if(myname == appname)
                 {
                     qDebug("Surface %s got tapShortcut\n", appname);
-                    qwm->activateSurface(json_object_new_string(myname.c_str()));
+                    qwm->activateSurface(myname);
                 }
             }
         });
