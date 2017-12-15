@@ -88,7 +88,7 @@ ApplicationWindow {
                     offImage: './images/HMI_HVAC_Inactive.svg'
                     Label {
                         anchors.centerIn: parent
-                        color: parent.checked ? '#66FF99' : '#848286'
+                        color: parent.checked ? '#00ADDC' : '#848286'
                         text: 'A/C'
                         font.pixelSize: parent.height / 3
                     }
@@ -101,7 +101,7 @@ ApplicationWindow {
                     offImage: './images/HMI_HVAC_Inactive.svg'
                     Label {
                         anchors.centerIn: parent
-                        color: parent.checked ? '#66FF99' : '#848286'
+                        color: parent.checked ? '#00ADDC' : '#848286'
                         text: 'AUTO'
                         font.pixelSize: parent.height / 3
                     }
