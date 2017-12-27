@@ -20,9 +20,14 @@
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
-#include <QQuickWindow>
+#include <QtQuick/QQuickWindow>
+
+#ifdef HAVE_LIBHOMESCREEN
 #include <libhomescreen.hpp>
+#endif
+#ifdef HAVE_QLIBWINDOWMANAGER
 #include <qlibwindowmanager.h>
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -42,10 +47,12 @@ int main(int argc, char *argv[])
     QStringList positionalArguments = parser.positionalArguments();
 
     QQmlApplicationEngine engine;
+    QQmlContext *context = engine.rootContext();
+    QUrl bindingAddress;
+
     if (positionalArguments.length() == 2) {
         int port = positionalArguments.takeFirst().toInt();
         QString secret = positionalArguments.takeFirst();
-        QUrl bindingAddress;
         bindingAddress.setScheme(QStringLiteral("ws"));
         bindingAddress.setHost(QStringLiteral("localhost"));
         bindingAddress.setPort(port);
@@ -53,49 +60,57 @@ int main(int argc, char *argv[])
         QUrlQuery query;
         query.addQueryItem(QStringLiteral("token"), secret);
         bindingAddress.setQuery(query);
-        QQmlContext *context = engine.rootContext();
-        context->setContextProperty(QStringLiteral("bindingAddress"), bindingAddress);
-
-        std::string token = secret.toStdString();
-        LibHomeScreen* hs = new LibHomeScreen();
-        QLibWindowmanager* qwm = new QLibWindowmanager();
-
-        // WindowManager
-        if(qwm->init(port,secret) != 0){
-            exit(EXIT_FAILURE);
-        }
-        // Request a surface as described in layers.json windowmanager’s file
-        if (qwm->requestSurface(myname) != 0) {
-            exit(EXIT_FAILURE);
-        }
-        // Create an event callbnewack against an event type. Here a lambda is called when SyncDraw event occurs
-        qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object *object) {
-            fprintf(stderr, "Surface got syncDraw!\n");
-            qwm->endDraw(myname);
-        });
-
-        // HomeScreen
-        hs->init(port, token.c_str());
-        // Set the event handler for Event_TapShortcut which will activate the surface for windowmanager
-        hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
-            json_object *appnameJ = nullptr;
-            if(json_object_object_get_ex(object, "application_name", &appnameJ))
-            {
-                const char *appname = json_object_get_string(appnameJ);
-                if(myname == appname)
-                {
-                    qDebug("Surface %s got tapShortcut\n", appname);
-                    qwm->activateSurface(myname);
-                }
-            }
-        });
-
-        engine.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
-        QObject *root = engine.rootObjects().first();
-        QQuickWindow *window = qobject_cast<QQuickWindow *>(root);
-        QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()
-        ));
     }
+    context->setContextProperty(QStringLiteral("bindingAddress"), bindingAddress);
+#ifdef HAVE_QLIBWINDOWMANAGER
+    QLibWindowmanager* qwm = new QLibWindowmanager();
+
+    // WindowManager
+    if(qwm->init(port,secret) != 0){
+        exit(EXIT_FAILURE);
+    }
+    // Request a surface as described in layers.json windowmanager’s file
+    if (qwm->requestSurface(myname) != 0) {
+        exit(EXIT_FAILURE);
+    }
+    // Create an event callbnewack against an event type. Here a lambda is called when SyncDraw event occurs
+    qwm->set_event_handler(QLibWindowmanager::Event_SyncDraw, [qwm, myname](json_object *object) {
+        fprintf(stderr, "Surface got syncDraw!\n");
+        qwm->endDraw(myname);
+    });
+#endif
+
+#ifdef HAVE_LIBHOMESCREEN
+    LibHomeScreen* hs = new LibHomeScreen();
+
+    // HomeScreen
+    std::string token = secret.toStdString();
+    hs->init(port, token.c_str());
+    // Set the event handler for Event_TapShortcut which will activate the surface for windowmanager
+    hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
+        json_object *appnameJ = nullptr;
+        if(json_object_object_get_ex(object, "application_name", &appnameJ))
+        {
+            const char *appname = json_object_get_string(appnameJ);
+            if(myname == appname)
+            {
+                qDebug("Surface %s got tapShortcut\n", appname);
+                qwm->activateSurface(myname);
+            }
+        }
+    });
+#endif
+
+    engine.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
+    QObject *root = engine.rootObjects().first();
+    QQuickWindow *window = qobject_cast<QQuickWindow *>(root);
+#ifdef HAVE_QLIBWINDOWMANAGER
+    QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
+#else
+    window->resize(1080, 1920 - 218 - 215);
+    window->setVisible(true);
+#endif
+
     return app.exec();
 }
 
