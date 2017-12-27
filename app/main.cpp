@@ -20,7 +20,6 @@
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlApplicationEngine>
 #include <QtQml/QQmlContext>
-#include <QtQuickControls2/QQuickStyle>
 #include <QQuickWindow>
 #include <libhomescreen.hpp>
 #include <qlibwindowmanager.h>
@@ -33,8 +32,6 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(QStringLiteral("0.1.0"));
     app.setOrganizationDomain(QStringLiteral("automotivelinux.org"));
     app.setOrganizationName(QStringLiteral("AutomotiveGradeLinux"));
-
-    QQuickStyle::setStyle("AGL");
 
     QCommandLineParser parser;
     parser.addPositionalArgument("port", app.translate("main", "port for binding"));
