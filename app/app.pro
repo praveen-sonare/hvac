@@ -1,5 +1,5 @@
 TARGET = hvac
-QT = quickcontrols2 qml
+QT = quick qml
 
 SOURCES = main.cpp
 
