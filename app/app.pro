@@ -1,10 +1,17 @@
 TARGET = hvac
 QT = quick qml
 
-SOURCES = main.cpp
+HEADERS += \
+    translator.h
+
+SOURCES = main.cpp \
+    translator.cpp
 
 RESOURCES += \
     hvac.qrc \
     images/images.qrc
 
 include(app.pri)
+
+LANGUAGES = ja_JP fr_FR en_US
+include(translations.pri)

@@ -18,10 +18,16 @@ import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.0
 import AGL.Demo.Controls 1.0
+import Translator 1.0
 import 'api' as API
 
 ApplicationWindow {
     id: root
+
+    Translator {
+        id: translator
+        language: 'en_US'
+    }
 
     API.Binding {
         id: binding
@@ -57,7 +63,7 @@ ApplicationWindow {
                     anchors.left: fanSpeedSlider.left
                     anchors.top: fanSpeedSlider.bottom
                     font.pixelSize: 32
-                    text: 'FAN SPEED'
+                    text: translator.translate(qsTr('FAN SPEED'), translator.language)
                 }
             }
         }
@@ -89,7 +95,7 @@ ApplicationWindow {
                     Label {
                         anchors.centerIn: parent
                         color: parent.checked ? '#00ADDC' : '#848286'
-                        text: 'A/C'
+                        text: translator.translate(qsTr('A/C'), translator.language)
                         font.pixelSize: parent.height / 3
                     }
                     onCheckedChanged: {
@@ -102,7 +108,7 @@ ApplicationWindow {
                     Label {
                         anchors.centerIn: parent
                         color: parent.checked ? '#00ADDC' : '#848286'
-                        text: 'AUTO'
+                        text: translator.translate(qsTr('AUTO'), translator.language)
                         font.pixelSize: parent.height / 3
                     }
                     onCheckedChanged: {
