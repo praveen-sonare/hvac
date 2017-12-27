@@ -28,11 +28,11 @@ ListView {
     property int degree: currentIndex > -1 ? model.get(currentIndex).value : -1
     model: ListModel {
         Component.onCompleted: {
-            append({value: 15, modelData: 'LO'})
+            append({value: 15, modelData: translator.translate(qsTr('LO'), translator.language)})
             for (var d = 16; d < 30; d++) {
-                append({value: d, modelData: d.toFixed(0) + '\u00b0'})
+                append({value: d, modelData: translator.translate(qsTr('%1\u00b0'), translator.language).arg(d.toFixed(0))})
             }
-            append({value: 30, modelData: 'HI'})
+            append({value: 30, modelData: translator.translate(qsTr('HI'), translator.language)})
         }
     }
     delegate: Label {
@@ -41,7 +41,7 @@ ListView {
         horizontalAlignment: Label.AlignHCenter
         verticalAlignment: Label.AlignVCenter
         text: model.modelData
-        font.pixelSize: height * 0.8
+        font.pixelSize: height * 0.7
         color: (ListView.view.enabled && ListView.isCurrentItem) ? '#00ADDC' : 'white'
     }
 
