@@ -33,6 +33,7 @@ ApplicationWindow {
         id: binding
         url: bindingAddress
         onFanSpeedChanged: fanSpeedSlider.value = fanSpeed
+        onLanguageChanged: translator.language = language
     }
 
     ColumnLayout {
