@@ -31,12 +31,17 @@
 
 #include <json-c/json.h>
 
-#define AFB_BINDING_VERSION   1
+#define AFB_BINDING_VERSION 2
 #include <afb/afb-binding.h>
 
 #define CAN_DEV "vcan0"
 
+#ifndef NULL
+#define NULL 0
+#endif
+
 static const struct afb_binding_interface *interface;
+static struct afb_event event;
 
 /*****************************************************************************************/
 /*****************************************************************************************/
@@ -105,13 +110,13 @@ static int open_can_dev_helper()
 {
 	struct ifreq ifr;
 
-	AFB_DEBUG(interface, "CAN Handler socket : %d", can_handler.socket);
+	AFB_DEBUG("CAN Handler socket : %d", can_handler.socket);
 	close(can_handler.socket);
 
 	can_handler.socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 	if (can_handler.socket < 0)
 	{
-		AFB_ERROR(interface, "socket could not be created");
+		AFB_ERROR("socket could not be created");
 	}
 	else
 	{
@@ -119,7 +124,7 @@ static int open_can_dev_helper()
 		strcpy(ifr.ifr_name, CAN_DEV);
 		if(ioctl(can_handler.socket, SIOCGIFINDEX, &ifr) < 0)
 		{
-			AFB_ERROR(interface, "ioctl failed");
+			AFB_ERROR("ioctl failed");
 		}
 		else
 		{
@@ -129,7 +134,7 @@ static int open_can_dev_helper()
 			// And bind it to txAddress
 			if (bind(can_handler.socket, (struct sockaddr *)&can_handler.txAddress, sizeof(can_handler.txAddress)) < 0)
 			{
-				AFB_ERROR(interface, "bind failed");
+				AFB_ERROR("bind failed");
 			}
 			else {
 				return 0;
@@ -146,7 +151,7 @@ static int open_can_dev()
 	int rc = retry(open_can_dev_helper);
 	if(rc < 0)
 	{
-		AFB_ERROR(interface, "Open of interface %s failed. Falling back to simulation mode", CAN_DEV);
+		AFB_ERROR("Open of interface %s failed. Falling back to simulation mode", CAN_DEV);
 		can_handler.socket = 0;
 		can_handler.simulation = true;
 		can_handler.send_msg = "FAKE CAN FRAME";
@@ -207,7 +212,7 @@ static int write_can()
 		txCanFrame.data[6] = 0;
 		txCanFrame.data[7] = 0;
 
-		AFB_DEBUG(interface, "%s: %d %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
+		AFB_DEBUG("%s: %d %d [%02x %02x %02x %02x %02x %02x %02x %02x]\n",
 			can_handler.send_msg,
 			txCanFrame.can_id, txCanFrame.can_dlc,
 			txCanFrame.data[0], txCanFrame.data[1], txCanFrame.data[2], txCanFrame.data[3],
@@ -215,17 +220,17 @@ static int write_can()
 
 		if(!can_handler.simulation)
 		{
-			rc = sendto(can_handler.socket, &txCanFrame, sizeof(struct can_frame), 0,
+			rc = (int)sendto(can_handler.socket, &txCanFrame, sizeof(struct can_frame), 0,
 				    (struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
 			if (rc < 0)
 			{
-				AFB_ERROR(interface, "Sending CAN frame failed.");
+				AFB_ERROR("Sending CAN frame failed.");
 			}
 		}
 	}
 	else
 	{
-		AFB_ERROR(interface, "socket not initialized. Attempt to reopen can device socket.");
+		AFB_ERROR("socket not initialized. Attempt to reopen can device socket.");
 		open_can_dev();
 	}
 	return rc;
@@ -300,7 +305,7 @@ static void get_temp_left_zone(struct afb_req request)
  */
 static void get(struct afb_req request)
 {
-	AFB_DEBUG(interface, "Getting all values");
+	AFB_DEBUG("Getting all values");
 	json_object *ret_json;
 
 	ret_json = json_object_new_object();
@@ -326,7 +331,7 @@ static void set(struct afb_req request)
 	uint8_t saves[sizeof hvac_values / sizeof *hvac_values];
 
 	/* records initial values */
-	AFB_DEBUG(interface, "Records initial values");
+	AFB_DEBUG("Records initial values");
 	i = (int)(sizeof hvac_values / sizeof *hvac_values);
 	while (i) {
 		i--;
@@ -337,22 +342,22 @@ static void set(struct afb_req request)
 	query = afb_req_json(request);
 	changed = 0;
 	i = (int)(sizeof hvac_values / sizeof *hvac_values);
-	AFB_DEBUG(interface, "Looping for args. i: %d", i);
+	AFB_DEBUG("Looping for args. i: %d", i);
 	while (i)
 	{
 		i--;
-		AFB_DEBUG(interface, "Searching... query: %s, i: %d, comp: %s", json_object_to_json_string(query), i, hvac_values[i].name);
+		AFB_DEBUG("Searching... query: %s, i: %d, comp: %s", json_object_to_json_string(query), i, hvac_values[i].name);
 		if (json_object_object_get_ex(query, hvac_values[i].name, &val))
 		{
-			AFB_DEBUG(interface, "We got it. Tests if it is an int or double.");
+			AFB_DEBUG("We got it. Tests if it is an int or double.");
 			if (json_object_is_type(val, json_type_int)) {
 				x = json_object_get_int(val);
-				AFB_DEBUG(interface, "We get an int: %d",x);
+				AFB_DEBUG("We get an int: %d",x);
 			}
 			else if (json_object_is_type(val, json_type_double)) {
 				d = json_object_get_double(val);
 				x = (int)round(d);
-				AFB_DEBUG(interface, "We get a double: %f => %d",d,x);
+				AFB_DEBUG("We get a double: %f => %d",d,x);
 			}
 			else {
 				afb_req_fail_f(request, "bad-request",
@@ -368,16 +373,16 @@ static void set(struct afb_req request)
 			if (values[i] != x) {
 				values[i] = (uint8_t)x;
 				changed = 1;
-				AFB_DEBUG(interface,"%s changed to %d",hvac_values[i].name,x);
+				AFB_DEBUG("%s changed to %d",hvac_values[i].name,x);
 			}
 		}
 		else {
-			AFB_DEBUG(interface, "%s not found in query!",hvac_values[i].name);
+			AFB_DEBUG("%s not found in query!",hvac_values[i].name);
 		}
 	}
 
 	/* attemps to set new values */
-	AFB_DEBUG(interface, "Diff: %d", changed);
+	AFB_DEBUG("Diff: %d", changed);
 	if (changed)
 	{
 		i = (int)(sizeof hvac_values / sizeof *hvac_values);
@@ -403,33 +408,90 @@ static void set(struct afb_req request)
 	}
 }
 
-// TODO: Have to change session management flag to AFB_SESSION_CHECK to use token auth
-static const struct afb_verb_desc_v1 verbs[]= {
-	{"get_temp_left_zone"	 , AFB_SESSION_NONE, get_temp_left_zone	, "Get the left zone temperature"},
-	{"get_temp_right_zone"	 , AFB_SESSION_NONE, get_temp_right_zone	, "Get the right zone temperature"},
-	{"get_fanspeed"	 , AFB_SESSION_NONE, get_fanspeed	, "Read fan speed"},
-	{"get"	 , AFB_SESSION_NONE, get	, "Read all values"},
-	{"set"	 , AFB_SESSION_NONE, set	, "Set a HVAC component value"},
-	{NULL}
-};
-
-static const struct afb_binding binding_desc = {
-	.type = AFB_BINDING_VERSION_1,
-	.v1 = {
-		.info = "hvac service",
-		.prefix = "hvac",
-		.verbs = verbs
-	}
-};
-
-const struct afb_binding *afbBindingV1Register (const struct afb_binding_interface *itf)
-{
-	interface = itf;
-
-	return &binding_desc;
-}
-
-int afbBindingV1ServiceInit(struct afb_service service)
+int bindingServicePreInit(struct afb_service service)
 {
 	return open_can_dev();
 }
+
+int bindingServiceInit(struct afb_service service)
+{
+	event = afb_daemon_make_event("language");
+	if(afb_daemon_require_api("identity", 1))
+		return -1;
+	return afb_service_call_sync("identity", "subscribe", NULL, NULL);
+}
+
+void onEvent(const char *event_name, struct json_object *object)
+{
+	json_object *args, *language = json_object_new_object();
+	json_object *id_evt_name, *current_identity;
+
+	AFB_NOTICE("Event '%s' received: %s", event_name,
+		json_object_to_json_string_ext(object, JSON_C_TO_STRING_PRETTY));
+
+	if (json_object_object_get_ex(object, "eventName", &id_evt_name) &&
+	  strcmp(json_object_get_string(id_evt_name), "login") &&
+	  !afb_service_call_sync("identity", "get", NULL, &current_identity)) {
+		if (! json_object_object_get_ex(current_identity, "graphPreferredLanguage", &language)) {
+			language = json_object_new_string("en_US");
+		}
+		afb_event_broadcast(event, language);
+	}
+}
+
+// TODO: Have to change session management flag to AFB_SESSION_CHECK to use token auth
+static const struct afb_verb_v2 _afb_verbs_v2_hvac[]= {
+	{
+		.verb = "get_temp_left_zone",
+		.callback = get_temp_left_zone,
+		.auth = NULL,
+		.info = "Get the left zone temperature",
+		.session = AFB_SESSION_NONE_V2
+	},
+	{
+		.verb = "get_temp_right_zone",
+		.callback = get_temp_right_zone,
+		.auth = NULL,
+		.info = "Get the right zone temperature",
+		.session = AFB_SESSION_NONE_V2
+	},
+	{
+		.verb = "get_fanspeed",
+		.callback = get_fanspeed,
+		.auth = NULL,
+		.info = "Read fan speed",
+		.session = AFB_SESSION_NONE_V2
+	},
+	{
+		.verb = "get",
+		.callback = get,
+		.auth = NULL,
+		.info = "Read all speed",
+		.session = AFB_SESSION_NONE_V2
+	},
+	{
+		.verb = "set",
+		.callback = set,
+		.auth = NULL,
+		.info = "Set a HVAC component value",
+		.session = AFB_SESSION_NONE_V2
+	},
+	{
+		.verb = NULL,
+		.callback = NULL,
+		.auth = NULL,
+		.info = NULL,
+		.session = 0
+	}
+};
+
+const struct afb_binding_v2 afbBindingV2 = {
+    .api = "hvac",
+    .specification = NULL,
+    .info = "HVAC service",
+    .verbs = _afb_verbs_v2_hvac,
+    .preinit = bindingServicePreInit,
+    .init = bindingServiceInit,
+    .onevent = onEvent,
+    .noconcurrency = 0
+};
