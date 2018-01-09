@@ -22,6 +22,8 @@
 #include <QtQml/QQmlContext>
 #include <QtQuick/QQuickWindow>
 
+#include "translator.h"
+
 #ifdef HAVE_LIBHOMESCREEN
 #include <libhomescreen.hpp>
 #endif
@@ -46,13 +48,17 @@ int main(int argc, char *argv[])
     parser.process(app);
     QStringList positionalArguments = parser.positionalArguments();
 
+    qmlRegisterType<Translator>("Translator", 1, 0, "Translator");
+
     QQmlApplicationEngine engine;
     QQmlContext *context = engine.rootContext();
     QUrl bindingAddress;
 
+    int port;
+    QString secret;
     if (positionalArguments.length() == 2) {
-        int port = positionalArguments.takeFirst().toInt();
-        QString secret = positionalArguments.takeFirst();
+        port = positionalArguments.takeFirst().toInt();
+        secret = positionalArguments.takeFirst();
         bindingAddress.setScheme(QStringLiteral("ws"));
         bindingAddress.setHost(QStringLiteral("localhost"));
         bindingAddress.setPort(port);
