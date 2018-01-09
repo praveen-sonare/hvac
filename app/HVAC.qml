@@ -26,13 +26,14 @@ ApplicationWindow {
 
     Translator {
         id: translator
-//        language: 'ja_JP'
+        language: binding.language
     }
 
     API.Binding {
         id: binding
         url: bindingAddress
         onFanSpeedChanged: fanSpeedSlider.value = fanSpeed
+        onLanguageChanged: translator.language = language
     }
 
     ColumnLayout {
