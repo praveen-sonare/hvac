@@ -138,6 +138,8 @@ ApplicationWindow {
                         binding.rightTemperature = degree
                     }
                 }
+
+
             }
         }
 

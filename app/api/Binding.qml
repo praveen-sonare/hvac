@@ -29,6 +29,7 @@ WebSocket {
     property real rightTemperature: 21.0
     property string language: "en_US"
 
+
     property Connections c : Connections {
         target: root
         onFanSpeedChanged: {
@@ -40,11 +41,20 @@ WebSocket {
             var json = [MessageId.call, '9999', 'hvac/set', {'LeftTemperature': leftTemperature}]
             console.debug(JSON.stringify(json))
             sendTextMessage(JSON.stringify(json))
+
+            var json1 = [MessageId.call, '9999', 'hvac/temp_left_zone_led', {'LeftLed': leftTemperature}]
+            console.debug(JSON.stringify(json1))
+            sendTextMessage(JSON.stringify(json1))
+               
         }
         onRightTemperatureChanged: {
             var json = [MessageId.call, '9999', 'hvac/set', {'RightTemperature': rightTemperature}]
             console.debug(JSON.stringify(json))
             sendTextMessage(JSON.stringify(json))
+
+            var json1 = [MessageId.call, '9999', 'hvac/temp_right_zone_led', {'RightLed': rightTemperature}]
+            console.debug(JSON.stringify(json1))
+            sendTextMessage(JSON.stringify(json1))
         }
         onLanguageChanged: {
             var json = [MessageId.call, '9999', 'hvac/set', {'Language': language}]
