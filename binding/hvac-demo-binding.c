@@ -19,6 +19,7 @@
  */
 #define _GNU_SOURCE
 
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -32,6 +33,9 @@
 #include <json-c/json.h>
 
 #define AFB_BINDING_VERSION 2
+#define RED "/sys/class/leds/blinkm-3-9-red/brightness"
+#define BLUE "/sys/class/leds/blinkm-3-9-blue/brightness"
+#define GREEN "/sys/class/leds/blinkm-3-9-green/brightness"
 #include <afb/afb-binding.h>
 
 #define CAN_DEV "vcan0"
@@ -94,7 +98,33 @@ static struct {
 	{ "LeftTemperature", 21 },
 	{ "RightTemperature", 21 },
 	{ "Temperature", 21 },
-	{ "FanSpeed", 0 }
+	{ "FanSpeed", 0 },
+	{ "ACEnabled", 0 },
+	{ "LeftLed", 15 },
+	{ "RightLed", 15 }
+};
+
+// Holds RGB combinations for each temperature
+static struct {
+	const int temperature;
+	const int rgb[3];
+} degree_colours[] = {
+	{15, {0, 0, 229} },
+	{16, {22, 0, 204} },
+	{17, {34, 0, 189} },
+	{18, {46, 0, 175} },
+	{19, {58, 0, 186} },
+	{20, {70, 0, 146} },
+	{21, {82, 0, 131} },
+	{22, {104, 0, 116} },
+	{23, {116, 0, 102} },
+	{24, {128, 0, 87} },
+	{25, {140, 0, 73} },
+	{26, {152, 0, 58} },
+	{27, {164, 0, 43} },
+	{28, {176, 0, 29} },
+	{29, {188, 0, 14} },
+	{30, {201, 0, 5} }
 };
 
 struct can_handler {
@@ -182,6 +212,16 @@ static uint8_t read_temp_right_zone()
 	return hvac_values[1].value;
 }
 
+static uint8_t read_temp_left_led()
+{
+	return hvac_values[5].value;
+}
+
+static uint8_t read_temp_right_led()
+{
+	return hvac_values[6].value;
+}
+
 static uint8_t read_temp()
 {
 	return (uint8_t)(((int)read_temp_left_zone() + (int)read_temp_right_zone()) >> 1);
@@ -190,6 +230,205 @@ static uint8_t read_temp()
 static uint8_t read_fanspeed()
 {
 	return hvac_values[3].value;
+}
+
+/* 
+ * @brief Writing to LED for both temperature sliders
+ */
+
+static int temp_write_led()
+{
+	int rc = 0, red_flag, blue_flag, green_flag, red_value, green_value, blue_value;
+	int right_temp;
+	int left_temp;
+
+	// /sys/class/leds/blinkm-3-9-red/brightness
+	FILE* r = fopen(RED, "w");
+	if (r == NULL) {
+		AFB_ERROR("Unable to open RED path for writing");
+		red_flag = 1;
+	}
+
+	// /sys/class/leds/blinkm-3-9-green/brightness
+	FILE* g = fopen(GREEN, "w");
+	if (g == NULL) {
+		AFB_ERROR("Unable to open GREEN path for writing");
+		green_flag = 1;
+	}
+
+	// /sys/class/leds/blinkm-3-9-blue/brightness
+	FILE* b = fopen(BLUE, "w");
+	if (b == NULL) {
+		AFB_ERROR("Unable to open BLUE path for writing");
+		blue_flag = 1;
+	}
+
+	if (red_flag || green_flag || blue_flag)
+	{
+		rc = 1;
+	}
+
+	left_temp = read_temp_left_led() - 15;
+	right_temp = read_temp_right_led() - 15;
+
+	// Calculates average colour value taken from the temperature toggles
+	red_value = (degree_colours[left_temp].rgb[0] + degree_colours[right_temp].rgb[0]) / 2;
+	green_value = (degree_colours[left_temp].rgb[1] + degree_colours[right_temp].rgb[1]) / 2;
+	blue_value = (degree_colours[left_temp].rgb[2] + degree_colours[right_temp].rgb[2]) / 2;
+
+	// Writes to LED file the specific colour
+	fprintf(r, "%d", red_value);
+	fprintf(g, "%d", green_value);
+	fprintf(b, "%d", blue_value);
+	fclose(r);
+	fclose(g);
+	fclose(b);
+	return rc;
+
+}
+
+/*
+ * @brief Get temperature of left toggle in HVAC system
+ *
+ * @param struct afb_req : an afb request structure
+ *
+ */
+static void temp_left_zone_led(struct afb_req request)
+{
+	int i = 5, rc, x, changed;
+	double d;
+	struct json_object *query, *val;
+	uint8_t values[sizeof hvac_values / sizeof *hvac_values];
+	uint8_t saves[sizeof hvac_values / sizeof *hvac_values];
+
+	AFB_WARNING("In temp_left_zone_led.");
+
+	query = afb_req_json(request);
+
+	/* records initial values */
+	AFB_WARNING("Records initial values");
+	values[i] = saves[i] = hvac_values[i].value;
+
+
+	if (json_object_object_get_ex(query, hvac_values[i].name, &val))
+	{
+		AFB_WARNING("Value of values[i] = %d", values[i]);
+		AFB_WARNING("We got it. Tests if it is an int or double.");
+		if (json_object_is_type(val, json_type_int)) {
+			x = json_object_get_int(val);
+			AFB_WARNING("We get an int: %d",x);
+		}
+		else if (json_object_is_type(val, json_type_double)) {
+			d = json_object_get_double(val);
+			x = (int)round(d);
+			AFB_WARNING("We get a double: %f => %d",d,x);
+		}
+		else {
+			afb_req_fail_f(request, "bad-request",
+				"argument '%s' isn't integer or double", hvac_values[i].name);
+			return;
+		}
+		if (x < 0 || x > 255)
+		{
+			afb_req_fail_f(request, "bad-request",
+				"argument '%s' is out of bounds", hvac_values[i].name);
+			return;
+		}
+		if (values[i] != x) {
+			values[i] = (uint8_t)x;
+			changed = 1;
+			AFB_WARNING("%s changed to %d", hvac_values[i].name,x);
+		}
+	}
+	else {
+		AFB_WARNING("%s not found in query!",hvac_values[i].name);
+	}
+
+
+	if (changed) {
+		hvac_values[i].value = values[i]; // update structure at line 102
+		AFB_WARNING("WRITE_LED: value: %d", hvac_values[i].value);
+		rc = temp_write_led();
+		if (rc >= 0)
+			afb_req_success(request, NULL, NULL);
+		else if (retry(temp_write_led)) {
+			/* restore initial values */
+			hvac_values[i].value = saves[i];
+			afb_req_fail(request, "error", "I2C error");
+		}
+	}
+}
+
+/*
+ * @brief Get temperature of right toggle in HVAC system
+ *
+ * @param struct afb_req : an afb request structure
+ *
+ */
+static void temp_right_zone_led(struct afb_req request)
+{
+	int i = 6, rc, x, changed;
+	double d;
+	struct json_object *query, *val;
+	uint8_t values[sizeof hvac_values / sizeof *hvac_values];
+	uint8_t saves[sizeof hvac_values / sizeof *hvac_values];
+
+	AFB_WARNING("In temp_right_zone_led.");
+
+	query = afb_req_json(request);
+
+	/* records initial values */
+	AFB_WARNING("Records initial values");
+	values[i] = saves[i] = hvac_values[i].value;
+
+
+	if (json_object_object_get_ex(query, hvac_values[i].name, &val))
+	{
+		AFB_WARNING("Value of values[i] = %d", values[i]);
+		AFB_WARNING("We got it. Tests if it is an int or double.");
+		if (json_object_is_type(val, json_type_int)) {
+			x = json_object_get_int(val);
+			AFB_WARNING("We get an int: %d",x);
+		}
+		else if (json_object_is_type(val, json_type_double)) {
+			d = json_object_get_double(val);
+			x = (int)round(d);
+			AFB_WARNING("We get a double: %f => %d",d,x);
+		}
+		else {
+			afb_req_fail_f(request, "bad-request",
+				"argument '%s' isn't integer or double", hvac_values[i].name);
+			return;
+		}
+		if (x < 0 || x > 255)
+		{
+			afb_req_fail_f(request, "bad-request",
+				"argument '%s' is out of bounds", hvac_values[i].name);
+			return;
+		}
+		if (values[i] != x) {
+			values[i] = (uint8_t)x;
+			changed = 1;
+			AFB_WARNING("%s changed to %d", hvac_values[i].name,x);
+		}
+	}
+	else {
+		AFB_WARNING("%s not found in query!", hvac_values[i].name);
+	}
+
+
+	if (changed) {
+		hvac_values[i].value = values[i]; // update structure at line 102
+		AFB_WARNING("WRITE_LED: value: %d", hvac_values[i].value);
+		rc = temp_write_led();
+		if (rc >= 0)
+			afb_req_success(request, NULL, NULL);
+		else if (retry(temp_write_led)) {
+			/* restore initial values */
+			hvac_values[i].value = saves[i];
+			afb_req_fail(request, "error", "I2C error");
+		}
+	}
 }
 
 static int write_can()
@@ -221,7 +460,7 @@ static int write_can()
 		if(!can_handler.simulation)
 		{
 			rc = (int)sendto(can_handler.socket, &txCanFrame, sizeof(struct can_frame), 0,
-				    (struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
+				(struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
 			if (rc < 0)
 			{
 				AFB_ERROR("Sending CAN frame failed.");
@@ -476,6 +715,21 @@ static const struct afb_verb_v2 _afb_verbs_v2_hvac[]= {
 		.auth = NULL,
 		.info = "Set a HVAC component value",
 		.session = AFB_SESSION_NONE_V2
+	},
+	{
+		.verb = "temp_left_zone_led",
+		.callback = temp_left_zone_led,
+		.auth = NULL,
+		.info = "Turn on LED on left temperature zone",
+		.session = AFB_SESSION_NONE_V2
+	},
+	{
+		.verb = "temp_right_zone_led",
+		.callback = temp_right_zone_led,
+		.auth = NULL,
+		.info = "Turn on LED on left temperature zone",
+		.session = AFB_SESSION_NONE_V2
+
 	},
 	{
 		.verb = NULL,

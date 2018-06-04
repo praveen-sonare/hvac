@@ -24,137 +24,137 @@ import 'api' as API
 ApplicationWindow {
     id: root
 
-    Translator {
-        id: translator
-        language: binding.language
-    }
+	Translator {
+		id: translator
+		language: binding.language
+	}
 
-    API.Binding {
-        id: binding
-        url: bindingAddress
-        onFanSpeedChanged: fanSpeedSlider.value = fanSpeed
-        onLanguageChanged: translator.language = language
-    }
+	API.Binding {
+		id: binding
+		url: bindingAddress
+		onFanSpeedChanged: fanSpeedSlider.value = fanSpeed
+		onLanguageChanged: translator.language = language
+	}
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.topMargin: width / 10
-        anchors.bottomMargin: width / 10
-        RowLayout {
-            Layout.fillHeight: true
-            Layout.alignment: Qt.AlignHCenter
-            Image {
-                source: './images/HMI_HVAC_Fan_Icon.svg'
-            }
-            Item {
-                width: root.width * 0.8
-                Slider {
-                    id: fanSpeedSlider
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    from: 0.0
-                    to: 255.0
-                    stepSize: 1.0
-                    onValueChanged: {
-                        binding.fanSpeed = value
-                    }
-                }
-                Label {
-                    anchors.left: fanSpeedSlider.left
-                    anchors.top: fanSpeedSlider.bottom
-                    font.pixelSize: 32
-                    text: translator.translate(qsTr('FAN SPEED'), translator.language)
-                }
-            }
-        }
-        RowLayout {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-            Layout.alignment: Layout.Center
-            spacing: 20
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 20
-                SeatHeatButton {
-                    id: leftSeat
-                    side: 'Left'
-                }
-                HeatDegree {
-                    onCurrentItemChanged: {
-                        console.log("Left Temp changed",degree)
-                        binding.leftTemperature = degree
-                    }
-                }
-            }
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 20
-                ToggleButton {
-                    onImage: './images/HMI_HVAC_Active.svg'
-                    offImage: './images/HMI_HVAC_Inactive.svg'
-                    Label {
-                        anchors.centerIn: parent
-                        color: parent.checked ? '#00ADDC' : '#848286'
-                        text: translator.translate(qsTr('A/C'), translator.language)
-                        font.pixelSize: parent.height / 3
-                    }
-                    onCheckedChanged: {
-                        console.debug('A/C', checked)
-                    }
-                }
-                ToggleButton {
-                    onImage: './images/HMI_HVAC_Active.svg'
-                    offImage: './images/HMI_HVAC_Inactive.svg'
-                    Label {
-                        anchors.centerIn: parent
-                        color: parent.checked ? '#00ADDC' : '#848286'
-                        text: translator.translate(qsTr('AUTO'), translator.language)
-                        font.pixelSize: parent.height / 3
-                    }
-                    onCheckedChanged: {
-                        console.debug('AUTO', checked)
-                    }
-                }
-                ToggleButton {
-                    onImage: './images/HMI_HVAC_Circulation_Active.svg'
-                    offImage: './images/HMI_HVAC_Circulation_Inactive.svg'
-                    onCheckedChanged: {
-                        console.debug('Circulation', checked)
-                    }
-                }
-            }
+	ColumnLayout {
+		anchors.fill: parent
+		anchors.topMargin: width / 10
+		anchors.bottomMargin: width / 10
+		RowLayout {
+			Layout.fillHeight: true
+			Layout.alignment: Qt.AlignHCenter
+			Image {
+				source: './images/HMI_HVAC_Fan_Icon.svg'
+			}
+			Item {
+				width: root.width * 0.8
+				Slider {
+					id: fanSpeedSlider
+					anchors.left: parent.left
+					anchors.right: parent.right
+					anchors.verticalCenter: parent.verticalCenter
+					from: 0.0
+					to: 255.0
+					stepSize: 1.0
+					onValueChanged: {
+						binding.fanSpeed = value
+					}
+				}
+				Label {
+					anchors.left: fanSpeedSlider.left
+					anchors.top: fanSpeedSlider.bottom
+					font.pixelSize: 32
+					text: translator.translate(qsTr('FAN SPEED'), translator.language)
+				}
+			}
+		}
+		RowLayout {
+			Layout.fillHeight: true
+			Layout.fillWidth: true
+			Layout.alignment: Layout.Center
+			spacing: 20
+			ColumnLayout {
+				Layout.fillWidth: true
+				spacing: 20
+				SeatHeatButton {
+					id: leftSeat
+					side: 'Left'
+				}
+				HeatDegree {
+					onCurrentItemChanged: {
+						console.log("Left Temp changed",degree)
+						binding.leftTemperature = degree
+					}
+				}
+			}
+			ColumnLayout {
+				Layout.fillWidth: true
+				spacing: 20
+				ToggleButton {
+					onImage: './images/HMI_HVAC_Active.svg'
+					offImage: './images/HMI_HVAC_Inactive.svg'
+					Label {
+						anchors.centerIn: parent
+						color: parent.checked ? '#00ADDC' : '#848286'
+						text: translator.translate(qsTr('A/C'), translator.language)
+						font.pixelSize: parent.height / 3
+					}
+					onCheckedChanged: {
+						console.debug('A/C', checked)
+					}
+				}
+				ToggleButton {
+					onImage: './images/HMI_HVAC_Active.svg'
+					offImage: './images/HMI_HVAC_Inactive.svg'
+					Label {
+						anchors.centerIn: parent
+						color: parent.checked ? '#00ADDC' : '#848286'
+						text: translator.translate(qsTr('AUTO'), translator.language)
+						font.pixelSize: parent.height / 3
+					}
+					onCheckedChanged: {
+						console.debug('AUTO', checked)
+					}
+				}
+				ToggleButton {
+					onImage: './images/HMI_HVAC_Circulation_Active.svg'
+					offImage: './images/HMI_HVAC_Circulation_Inactive.svg'
+					onCheckedChanged: {
+						console.debug('Circulation', checked)
+					}
+				}
+			}
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 20
-                SeatHeatButton {
-                    id: rightSeat
-                    side: 'Right'
-                }
-                HeatDegree {
-                    onCurrentItemChanged: {
-                        console.log("Right Temp changed",degree)
-                        binding.rightTemperature = degree
-                    }
-                }
-            }
-        }
+			ColumnLayout {
+				Layout.fillWidth: true
+				spacing: 20
+				SeatHeatButton {
+					id: rightSeat
+					side: 'Right'
+				}
+				HeatDegree {
+					onCurrentItemChanged: {
+						console.log("Right Temp changed",degree)
+						binding.rightTemperature = degree
+					}
+				}
+			}
+		}
 
-        RowLayout {
-            Layout.fillHeight: true
-            Layout.alignment: Qt.AlignHCenter
-            spacing: root.width / 20
-            Repeater {
-                model: ['AirDown', 'AirUp', 'AirRight', 'Rear', 'Front']
-                ToggleButton {
-                    onImage: './images/HMI_HVAC_%1_Active.svg'.arg(model.modelData)
-                    offImage: './images/HMI_HVAC_%1_Inactive.svg'.arg(model.modelData)
-                    onCheckedChanged: {
-                        console.debug(model.modelData, checked)
-                    }
-                }
-            }
-        }
-    }
+		RowLayout {
+			Layout.fillHeight: true
+			Layout.alignment: Qt.AlignHCenter
+			spacing: root.width / 20
+			Repeater {
+				model: ['AirDown', 'AirUp', 'AirRight', 'Rear', 'Front']
+				ToggleButton {
+					onImage: './images/HMI_HVAC_%1_Active.svg'.arg(model.modelData)
+					offImage: './images/HMI_HVAC_%1_Inactive.svg'.arg(model.modelData)
+					onCheckedChanged: {
+						console.debug(model.modelData, checked)
+					}
+				}
+			}
+		}
+	}
 }

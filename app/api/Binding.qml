@@ -19,67 +19,75 @@ import QtWebSockets 1.0
 import 'MessageId.js' as MessageId
 
 WebSocket {
-    id: root
-    active: true
+	id: root
+	active: true
 
-    property string statusString: "waiting..."
+	property string statusString: "waiting..."
 
-    property real fanSpeed: 0.0
-    property real leftTemperature: 21.0
-    property real rightTemperature: 21.0
-    property string language: "en_US"
+	property real fanSpeed: 0.0
+	property real leftTemperature: 21.0
+	property real rightTemperature: 21.0
+	property string language: "en_US"
 
-    property Connections c : Connections {
-        target: root
-        onFanSpeedChanged: {
-            var json = [MessageId.call, '9999', 'hvac/set', {'FanSpeed': fanSpeed}]
-            console.debug(JSON.stringify(json))
-            sendTextMessage(JSON.stringify(json))
-        }
-        onLeftTemperatureChanged: {
-            var json = [MessageId.call, '9999', 'hvac/set', {'LeftTemperature': leftTemperature}]
-            console.debug(JSON.stringify(json))
-            sendTextMessage(JSON.stringify(json))
-        }
-        onRightTemperatureChanged: {
-            var json = [MessageId.call, '9999', 'hvac/set', {'RightTemperature': rightTemperature}]
-            console.debug(JSON.stringify(json))
-            sendTextMessage(JSON.stringify(json))
-        }
-        onLanguageChanged: {
-            var json = [MessageId.call, '9999', 'hvac/set', {'Language': language}]
-            console.debug(JSON.stringify(json))
-            sendTextMessage(JSON.stringify(json))
-        }
-    }
+	property Connections c : Connections {
+		target: root
+		onFanSpeedChanged: {
+			var json = [MessageId.call, '9999', 'hvac/set', {'FanSpeed': fanSpeed}]
+			console.debug(JSON.stringify(json))
+			sendTextMessage(JSON.stringify(json))
+		}
+		onLeftTemperatureChanged: {
+			var json = [MessageId.call, '9999', 'hvac/set', {'LeftTemperature': leftTemperature}]
+			console.debug(JSON.stringify(json))
+			sendTextMessage(JSON.stringify(json))
 
-    onTextMessageReceived: {
-        var json = JSON.parse(message)
-        var request = json[2].request
-        var response = json[2].response
-        console.log("HVAC Binding Message: ",message)
-        switch (json[0]) {
-        case MessageId.call:
-            break
-        case MessageId.retok:
-            root.statusString = request.status
-            break
-        case MessageId.reterr:
-            root.statusString = "Bad return value, binding probably not installed"
-            break
-        case MessageId.event:
-            if (json[1] == "hvac/language")
-                console.log("HVAC event received: ",json[2])
-                root.language = json[2].data
-                root.statusString = "Language changed to "+language
-            break
-        }
-    }
-    onStatusChanged: {
-        switch (status) {
-        case WebSocket.Error:
-            root.statusString = "WebSocket error: " + root.errorString
-            break
-        }
-    }
+			var json1 = [MessageId.call, '9999', 'hvac/temp_left_zone_led', {'LeftLed': leftTemperature}]
+			console.debug(JSON.stringify(json1))
+			sendTextMessage(JSON.stringify(json1))
+		}
+		onRightTemperatureChanged: {
+			var json = [MessageId.call, '9999', 'hvac/set', {'RightTemperature': rightTemperature}]
+			console.debug(JSON.stringify(json))
+			sendTextMessage(JSON.stringify(json))
+
+			var json1 = [MessageId.call, '9999', 'hvac/temp_right_zone_led', {'RightLed': rightTemperature}]
+			console.debug(JSON.stringify(json1))
+			sendTextMessage(JSON.stringify(json1))
+		}
+		onLanguageChanged: {
+			var json = [MessageId.call, '9999', 'hvac/set', {'Language': language}]
+			console.debug(JSON.stringify(json))
+			sendTextMessage(JSON.stringify(json))
+		}
+	}
+
+	onTextMessageReceived: {
+		var json = JSON.parse(message)
+		var request = json[2].request
+		var response = json[2].response
+		console.log("HVAC Binding Message: ",message)
+		switch (json[0]) {
+		case MessageId.call:
+			break
+		case MessageId.retok:
+			root.statusString = request.status
+			break
+		case MessageId.reterr:
+			root.statusString = "Bad return value, binding probably not installed"
+			break
+		case MessageId.event:
+			if (json[1] == "hvac/language")
+				console.log("HVAC event received: ",json[2])
+				root.language = json[2].data
+				root.statusString = "Language changed to "+language
+			break
+		}
+	}
+	onStatusChanged: {
+		switch (status) {
+		case WebSocket.Error:
+			root.statusString = "WebSocket error: " + root.errorString
+			break
+		}
+	}
 }
