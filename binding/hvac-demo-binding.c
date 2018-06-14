@@ -33,9 +33,9 @@
 #include <json-c/json.h>
 
 #define AFB_BINDING_VERSION 2
-#define RED "/sys/class/leds/blinkm-3-9-red/brightness"
-#define BLUE "/sys/class/leds/blinkm-3-9-blue/brightness"
-#define GREEN "/sys/class/leds/blinkm-3-9-green/brightness"
+#define RED "/sys/class/leds/blinkm-24-9-red/brightness"
+#define BLUE "/sys/class/leds/blinkm-24-9-blue/brightness"
+#define GREEN "/sys/class/leds/blinkm-24-9-green/brightness"
 #include <afb/afb-binding.h>
 
 #define CAN_DEV "vcan0"
@@ -242,21 +242,21 @@ static int temp_write_led()
     int right_temp;
     int left_temp;
 
-    // /sys/class/leds/blinkm-3-9-red/brightness
+    // /sys/class/leds/blinkm-24-9-red/brightness
     FILE* r = fopen(RED, "w");
     if (r == NULL) {
         AFB_ERROR("Unable to open RED path for writing");
         red_flag = 1;
     }
 
-    // /sys/class/leds/blinkm-3-9-green/brightness
+    // /sys/class/leds/blinkm-24-9-green/brightness
     FILE* g = fopen(GREEN, "w");
     if (g == NULL) {
         AFB_ERROR("Unable to open GREEN path for writing");
         green_flag = 1;
     }
 
-    // /sys/class/leds/blinkm-3-9-blue/brightness
+    // /sys/class/leds/blinkm-24-9-blue/brightness
     FILE* b = fopen(BLUE, "w");
     if (b == NULL) {
         AFB_ERROR("Unable to open BLUE path for writing");
