@@ -38,7 +38,7 @@
 #define GREEN "/sys/class/leds/blinkm-24-9-green/brightness"
 #include <afb/afb-binding.h>
 
-#define CAN_DEV "vcan0"
+#define CAN_DEV "sllin0"
 
 #ifndef NULL
 #define NULL 0
@@ -463,6 +463,7 @@ static int write_can()
 
         if(!can_handler.simulation)
         {
+            usleep(100000);
             rc = (int)sendto(can_handler.socket, &txCanFrame, sizeof(struct can_frame), 0,
                     (struct sockaddr*)&can_handler.txAddress, sizeof(can_handler.txAddress));
             if (rc < 0)
