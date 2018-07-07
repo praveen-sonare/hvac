@@ -29,14 +29,14 @@
 #include <net/if.h>
 #include <linux/can.h>
 #include <math.h>
-
 #include <json-c/json.h>
 
 #define AFB_BINDING_VERSION 2
-#define RED "/sys/class/leds/blinkm-3-9-red/brightness"
-#define BLUE "/sys/class/leds/blinkm-3-9-blue/brightness"
-#define GREEN "/sys/class/leds/blinkm-3-9-green/brightness"
 #include <afb/afb-binding.h>
+
+#define RED "/sys/class/leds/blinkm-3-9-red/brightness"
+#define GREEN "/sys/class/leds/blinkm-3-9-green/brightness"
+#define BLUE "/sys/class/leds/blinkm-3-9-blue/brightness"
 
 #define CAN_DEV "vcan0"
 
@@ -132,6 +132,16 @@ struct can_handler {
 	bool simulation;
 	char *send_msg;
 	struct sockaddr_can txAddress;
+};
+
+struct led_paths {
+	char *red;
+	char *green;
+	char *blue;
+}led_paths_values = {
+	.red = RED,
+	.green = GREEN,
+	.blue = BLUE
 };
 
 static struct can_handler can_handler = { .socket = -1, .simulation = false, .send_msg = "SENDING CAN FRAME"};
@@ -233,40 +243,52 @@ static uint8_t read_fanspeed()
 }
 
 /* 
+ * @param: None
+ *
+ * @brief: Parse JSON configuration file for blinkm path
+ */
+static int parse_config()
+{
+	struct json_object *ledtemp = NULL;
+	struct json_object *jobj = json_object_from_file("/etc/hvac.json");
+
+	// Check if .json file has been parsed as a json_object
+	if (!jobj) {
+		AFB_ERROR("JSON file could not be opened!\n");
+		return 1;
+	}
+
+	// Check if json_object with key "ledtemp" has been found in .json file
+	if (!json_object_object_get_ex(jobj, "ledtemp", &ledtemp)){
+		AFB_ERROR("Key not found!\n");
+		return 1;
+	}
+
+	// Extract directory paths for each LED colour
+	json_object_object_foreach(ledtemp, key, value) {
+		if (strcmp(key, "red") == 0) {
+			led_paths_values.red = json_object_get_string(value);
+		} else if (strcmp(key, "green") == 0) {
+			led_paths_values.green = json_object_get_string(value);
+		} else if (strcmp(key, "blue") == 0) {
+			led_paths_values.blue = json_object_get_string(value);
+		}
+	}
+
+	// return 0 if all succeeded
+	return 0;
+
+}
+
+/* 
  * @brief Writing to LED for both temperature sliders
  */
-
 static int temp_write_led()
 {
-	int rc = 0, red_flag, blue_flag, green_flag, red_value, green_value, blue_value;
+
+	int rc = -1, red_value, green_value, blue_value;
 	int right_temp;
 	int left_temp;
-
-	// /sys/class/leds/blinkm-3-9-red/brightness
-	FILE* r = fopen(RED, "w");
-	if (r == NULL) {
-		AFB_ERROR("Unable to open RED path for writing");
-		red_flag = 1;
-	}
-
-	// /sys/class/leds/blinkm-3-9-green/brightness
-	FILE* g = fopen(GREEN, "w");
-	if (g == NULL) {
-		AFB_ERROR("Unable to open GREEN path for writing");
-		green_flag = 1;
-	}
-
-	// /sys/class/leds/blinkm-3-9-blue/brightness
-	FILE* b = fopen(BLUE, "w");
-	if (b == NULL) {
-		AFB_ERROR("Unable to open BLUE path for writing");
-		blue_flag = 1;
-	}
-
-	if (red_flag || green_flag || blue_flag)
-	{
-		rc = 1;
-	}
 
 	left_temp = read_temp_left_led() - 15;
 	right_temp = read_temp_right_led() - 15;
@@ -275,16 +297,38 @@ static int temp_write_led()
 	red_value = (degree_colours[left_temp].rgb[0] + degree_colours[right_temp].rgb[0]) / 2;
 	green_value = (degree_colours[left_temp].rgb[1] + degree_colours[right_temp].rgb[1]) / 2;
 	blue_value = (degree_colours[left_temp].rgb[2] + degree_colours[right_temp].rgb[2]) / 2;
+	
+	// default path: /sys/class/leds/blinkm-3-9-red/brightness
+	FILE* r = fopen(led_paths_values.red, "w");
+	if(r){
+		fprintf(r, "%d", red_value);
+		fclose(r);
+	} else {
+		AFB_ERROR("Unable to open red LED path!\n");
+		return -1;
+	}
 
-	// Writes to LED file the specific colour
-	fprintf(r, "%d", red_value);
-	fprintf(g, "%d", green_value);
-	fprintf(b, "%d", blue_value);
-	fclose(r);
-	fclose(g);
-	fclose(b);
-	return rc;
+	// default path: /sys/class/leds/blinkm-3-9-green/brightness
+	FILE* g = fopen(led_paths_values.green, "w");
+	if(g){
+		fprintf(g, "%d", green_value);
+		fclose(g);
+	} else {
+		AFB_ERROR("Unable to open green LED path!\n");
+		return -1;
+	}
 
+	// default path: /sys/class/leds/blinkm-3-9-blue/brightness
+	FILE* b = fopen(led_paths_values.blue, "w");
+	if(b){
+		fprintf(b, "%d", blue_value);
+		fclose(b);
+	} else {
+		AFB_ERROR("Unable to open blue LED path!\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
@@ -655,6 +699,8 @@ int bindingServicePreInit(struct afb_service service)
 int bindingServiceInit(struct afb_service service)
 {
 	event = afb_daemon_make_event("language");
+	if(parse_config() != 0)
+		AFB_WARNING("Default values are being used!\n");
 	if(afb_daemon_require_api("identity", 1))
 		return -1;
 	return afb_service_call_sync("identity", "subscribe", NULL, NULL);
