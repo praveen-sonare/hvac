@@ -75,6 +75,8 @@ int main(int argc, char *argv[])
     if(qwm->init(port,secret) != 0){
         exit(EXIT_FAILURE);
     }
+    AGLScreenInfo screenInfo(qwm->get_scale_factor());
+    engine.rootContext()->setContextProperty(QStringLiteral("screenInfo"), &screenInfo);
     // Request a surface as described in layers.json windowmanager’s file
     if (qwm->requestSurface(myname) != 0) {
         exit(EXIT_FAILURE);

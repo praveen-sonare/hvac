@@ -24,6 +24,9 @@ import 'api' as API
 ApplicationWindow {
     id: root
 
+    width: container.width * container.scale
+    height: container.height * container.scale
+
 	Translator {
 		id: translator
 		language: binding.language
@@ -36,6 +39,13 @@ ApplicationWindow {
 		onLanguageChanged: translator.language = language
 	}
 
+    Item {
+        id: container
+        anchors.centerIn: parent
+        width: 1080
+        height: 1487
+        scale: screenInfo.scale_factor()
+
 	ColumnLayout {
 		anchors.fill: parent
 		anchors.topMargin: width / 10
@@ -47,7 +57,7 @@ ApplicationWindow {
 				source: './images/HMI_HVAC_Fan_Icon.svg'
 			}
 			Item {
-				width: root.width * 0.8
+				width: container.width * 0.8
 				Slider {
 					id: fanSpeedSlider
 					anchors.left: parent.left
@@ -157,4 +167,5 @@ ApplicationWindow {
 			}
 		}
 	}
+}
 }
