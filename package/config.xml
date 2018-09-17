@@ -10,9 +10,7 @@
     <param name="windowmanager" value="ws" />
     <param name="homescreen" value="ws" />
     <param name="identity" value="ws" />
-  </feature>
-  <feature name="urn:AGL:widget:required-binding">
-    <param name="lib/libhvac-demo-binding.so" value="local" />
+    <param name="HVAC" value="ws" />
   </feature>
   <feature name="urn:AGL:widget:required-permission">
     <param name="urn:AGL:permission::public:no-htdocs" value="required" />
