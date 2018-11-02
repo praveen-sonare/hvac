@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_QLIBWINDOWMANAGER
     QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
 #else
-    window->resize(1080, 1920 - 218 - 215);
+    window->resize(1920, 720);
     window->setVisible(true);
 #endif
 
