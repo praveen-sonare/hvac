@@ -1,5 +1,5 @@
 TARGET = hvac
-QT = quick qml
+QT = quick qml aglextras
 
 HEADERS += \
     translator.h
