@@ -28,12 +28,14 @@ WebSocket {
 	property real leftTemperature: 21.0
 	property real rightTemperature: 21.0
 	property string language: "en_US"
+    property int nbFanSpeed : 0
 
 	property Connections c : Connections {
 		target: root
 		onFanSpeedChanged: {
 			var json = [MessageId.call, '9999', 'hvac/set', {'FanSpeed': fanSpeed}]
 			console.debug(JSON.stringify(json))
+            nbFanSpeed++
 			sendTextMessage(JSON.stringify(json))
 		}
 		onLeftTemperatureChanged: {
@@ -76,10 +78,26 @@ WebSocket {
 			root.statusString = "Bad return value, binding probably not installed"
 			break
 		case MessageId.event:
-			if (json[1] == "hvac/language")
+			if (json[1] == "hvac/language") {
 				console.log("HVAC event received: ",json[2])
 				root.language = json[2].data
 				root.statusString = "Language changed to "+language
+            } else if (json[1] == "hvac/update") {
+				console.log("HVAC event update received: ", json[2])
+                console.log(json[2].data.LeftTemperature)
+                if(json[2].data.LeftTemperature) {
+                    console.log("THATS COOL:::", json[2].data)
+                    binding = leftTemperature = json[2].data.LeftTemperature
+                } else if (json[2].data.FanSpeed) {
+                    console.log("FANSPEED :: ", json[2].data.FanSpeed)
+                    if(nbFanSpeed > 0)
+                        nbFanSpeed--
+                    if(nbFanSpeed == 0)
+                        binding.fanSpeed = json[2].data.FanSpeed
+                } else {
+                    console.log("THATS NOT COOL!!!!!!!!!!!!!!!!")
+                }
+            }
 			break
 		}
 	}
