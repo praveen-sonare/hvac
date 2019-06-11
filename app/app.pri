@@ -2,13 +2,13 @@ TEMPLATE = app
 
 load(configure)
 
-qtCompileTest(libhomescreen)
+qtCompileTest(qlibhomescreen)
 qtCompileTest(qlibwindowmanager)
 
-config_libhomescreen {
+config_qlibhomescreen {
     CONFIG += link_pkgconfig
-    PKGCONFIG += libhomescreen
-    DEFINES += HAVE_LIBHOMESCREEN
+    PKGCONFIG += qlibhomescreen
+    DEFINES += HAVE_QLIBHOMESCREEN
 }
 
 config_qlibwindowmanager {

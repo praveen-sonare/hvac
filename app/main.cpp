@@ -24,8 +24,8 @@
 
 #include "translator.h"
 
-#ifdef HAVE_LIBHOMESCREEN
-#include <libhomescreen.hpp>
+#ifdef HAVE_QLIBHOMESCREEN
+#include <qlibhomescreen.h>
 #endif
 #ifdef HAVE_QLIBWINDOWMANAGER
 #include <qlibwindowmanager.h>
@@ -88,14 +88,14 @@ int main(int argc, char *argv[])
     });
 #endif
 
-#ifdef HAVE_LIBHOMESCREEN
-    LibHomeScreen* hs = new LibHomeScreen();
+#ifdef HAVE_QLIBHOMESCREEN
+    QLibHomeScreen* qhs = new QLibHomeScreen();
 
     // HomeScreen
     std::string token = secret.toStdString();
-    hs->init(port, token.c_str());
+    qhs->init(port, token.c_str());
     // Set the event handler for Event_TapShortcut which will activate the surface for windowmanager
-    hs->set_event_handler(LibHomeScreen::Event_TapShortcut, [qwm, myname](json_object *object){
+    qhs->set_event_handler(QLibHomeScreen::Event_ShowWindow, [qwm, myname](json_object *object){
         qwm->activateSurface(myname);
     });
 #endif
@@ -104,7 +104,8 @@ int main(int argc, char *argv[])
     QObject *root = engine.rootObjects().first();
     QQuickWindow *window = qobject_cast<QQuickWindow *>(root);
 #ifdef HAVE_QLIBWINDOWMANAGER
-    QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
+    // QObject::connect(window, SIGNAL(frameSwapped()), qwm, SLOT(slotActivateSurface()));
+    qhs->setQuickWindow(window);
 #else
     window->resize(1920, 720);
     window->setVisible(true);
