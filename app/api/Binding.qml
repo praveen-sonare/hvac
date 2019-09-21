@@ -76,7 +76,7 @@ WebSocket {
 			root.statusString = "Bad return value, binding probably not installed"
 			break
 		case MessageId.event:
-			if (json[1] == "hvac/language")
+			if (json[1] === "hvac/language")
 				console.log("HVAC event received: ",json[2])
 				root.language = json[2].data
 				root.statusString = "Language changed to "+language
