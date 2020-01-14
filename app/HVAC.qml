@@ -19,7 +19,6 @@ import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.0
 import AGL.Demo.Controls 1.0
 import Translator 1.0
-import 'api' as API
 
 ApplicationWindow {
     id: root
@@ -29,12 +28,11 @@ ApplicationWindow {
 
 	Translator {
 		id: translator
-		language: binding.language
+		language: "en_US"
 	}
 
-	API.Binding {
-		id: binding
-		url: bindingAddress
+	Connections {
+		target: hvac
 		onFanSpeedChanged: fanSpeedSlider.value = fanSpeed
 		onLanguageChanged: translator.language = language
 	}
@@ -67,7 +65,7 @@ ApplicationWindow {
 					to: 255.0
 					stepSize: 1.0
 					onValueChanged: {
-						binding.fanSpeed = value
+						hvac.fanSpeed = value
 					}
 				}
 				Label {
@@ -93,7 +91,7 @@ ApplicationWindow {
 				HeatDegree {
 					onCurrentItemChanged: {
 						console.log("Left Temp changed",degree)
-						binding.leftTemperature = degree
+						hvac.leftTemperature = degree
 					}
 				}
 			}
@@ -145,7 +143,7 @@ ApplicationWindow {
 				HeatDegree {
 					onCurrentItemChanged: {
 						console.log("Right Temp changed",degree)
-						binding.rightTemperature = degree
+						hvac.rightTemperature = degree
 					}
 				}
 			}

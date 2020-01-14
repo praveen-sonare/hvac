@@ -16,6 +16,7 @@
 
 #include <QtAGLExtras/AGLApplication>
 #include <QtQml/QQmlApplicationEngine>
+#include <hvac.h>
 
 #include "translator.h"
 
@@ -24,6 +25,17 @@ int main(int argc, char *argv[])
     AGLApplication app(argc, argv);
     app.setApplicationName("HVAC");
     app.setupApplicationRole("hvac");
+
+    QQmlApplicationEngine *engine = app.getQmlApplicationEngine();
+    QQmlContext *context = engine->rootContext();
+    QVariant v = context->contextProperty(QStringLiteral("bindingAddress"));
+    if(v.canConvert(QMetaType::QUrl)) {
+        QUrl bindingAddress = v.toUrl();
+        context->setContextProperty("hvac", new HVAC(bindingAddress));
+    } else {
+        qCritical("Cannot find bindingAddress property in context, SignalComposer unavailable");
+    }
+
     qmlRegisterType<Translator>("Translator", 1, 0, "Translator");
     app.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
     return app.exec();
