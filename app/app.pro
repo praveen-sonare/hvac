@@ -1,5 +1,5 @@
 TARGET = hvac
-QT = quick qml aglextras
+QT = quick qml websockets
 
 HEADERS += \
     translator.h
@@ -7,7 +7,7 @@ HEADERS += \
 SOURCES = main.cpp \
     translator.cpp
 
-CONFIG += link_pkgconfig
+CONFIG += c++11 link_pkgconfig
 PKGCONFIG += qtappfw-hvac
 
 RESOURCES += \
