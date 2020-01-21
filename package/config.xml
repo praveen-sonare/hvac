@@ -7,8 +7,6 @@
   <author>Romain Forlot &lt;romain.forlot@iot.bzh&gt;</author>
   <license>APL 2.0</license>
   <feature name="urn:AGL:widget:required-api">
-    <param name="windowmanager" value="ws" />
-    <param name="homescreen" value="ws" />
     <param name="identity" value="ws" />
     <param name="HVAC" value="ws" />
   </feature>

@@ -1,5 +1,10 @@
 TARGET = hvac
-QT = quick qml aglextras
+QT = quick qml websockets
+
+CONFIG += c++11 link_pkgconfig
+PKGCONFIG += qtappfw afb-helpers-qt
+
+#aglextras
 
 HEADERS += \
     translator.h
