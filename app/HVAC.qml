@@ -17,6 +17,7 @@
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.0
+import QtQuick.Window 2.11
 import AGL.Demo.Controls 1.0
 import Translator 1.0
 
@@ -40,9 +41,9 @@ ApplicationWindow {
     Item {
         id: container
         anchors.centerIn: parent
-        width: 1080
-        height: 1487
-        scale: screenInfo.scale_factor()
+        width: Screen.width
+        height: Screen.height
+        scale: 1
 
 	ColumnLayout {
 		anchors.fill: parent
