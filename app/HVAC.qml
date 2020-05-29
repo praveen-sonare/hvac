@@ -43,8 +43,10 @@ ApplicationWindow {
     Item {
         id: container
         anchors.centerIn: parent
-        width: Screen.width
-        height: Screen.height
+        //width: Window.width
+        width: 1080
+        height: Window.height
+        //scale: Window.scale
         scale: 1
 
 	ColumnLayout {
