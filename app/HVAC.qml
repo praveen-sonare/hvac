@@ -41,9 +41,9 @@ ApplicationWindow {
     Item {
         id: container
         anchors.centerIn: parent
-        width: Screen.width
-        height: Screen.height
-        scale: 1
+        width: Window.width
+        height: Window.height
+        scale: Window.scale
 
 	ColumnLayout {
 		anchors.fill: parent
@@ -56,7 +56,7 @@ ApplicationWindow {
 				source: './images/HMI_HVAC_Fan_Icon.svg'
 			}
 			Item {
-				width: container.width * 0.8
+				width: 1080 * 0.8
 				Slider {
 					id: fanSpeedSlider
 					anchors.left: parent.left
