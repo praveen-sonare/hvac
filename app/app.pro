@@ -1,24 +1,26 @@
+TEMPLATE = app
 TARGET = hvac
-QT = quick qml websockets
+QT = qml quick
+CONFIG += c++11 link_pkgconfig
+
+PKGCONFIG += qtappfw-hvac
 
 HEADERS += \
     translator.h
 
-SOURCES = main.cpp \
+SOURCES = \
+    main.cpp \
     translator.cpp
-
-CONFIG += c++11 link_pkgconfig
-PKGCONFIG += qtappfw-hvac
-
-CONFIG(release, debug|release) {
-    QMAKE_POST_LINK = $(STRIP) --strip-unneeded $(TARGET)
-}
 
 RESOURCES += \
     hvac.qrc \
     images/images.qrc
 
-include(app.pri)
-
 LANGUAGES = ja_JP fr_FR
 include(translations.pri)
+
+target.path = $${PREFIX}/usr/bin
+target.files += $${OUT_PWD}/$${TARGET}
+target.CONFIG = no_check_exist executable
+
+INSTALLS += target
