@@ -19,7 +19,7 @@ RESOURCES += \
 LANGUAGES = ja_JP fr_FR
 include(translations.pri)
 
-target.path = $${PREFIX}/usr/bin
+target.path = /usr/bin
 target.files += $${OUT_PWD}/$${TARGET}
 target.CONFIG = no_check_exist executable
 

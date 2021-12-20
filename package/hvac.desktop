@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=HVAC
+Comment=HVAC
+GenericName=HVAC
+Exec=hvac
+Icon=hvac
+Terminal=false
+Type=Application
+Categories=System;
+StartupNotify=true
