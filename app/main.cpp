@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2016 The Qt Company Ltd.
+ * Copyright (C) 2022 Konsulko Group
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@
 #include <QQmlApplicationEngine>
 #include <QDebug>
 #include <hvac.h>
+#include <vehiclesignals.h>
 
 #include "translator.h"
 
@@ -28,7 +30,8 @@ int main(int argc, char *argv[])
 	QGuiApplication app(argc, argv);
 
 	QQmlApplicationEngine engine;
-        engine.rootContext()->setContextProperty("hvac", new HVAC());
+	VehicleSignalsConfig vsConfig("hvac");
+	engine.rootContext()->setContextProperty("hvac", new HVAC(new VehicleSignals(vsConfig)));
 	qmlRegisterType<Translator>("Translator", 1, 0, "Translator");
 	engine.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
 

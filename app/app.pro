@@ -3,7 +3,7 @@ TARGET = hvac
 QT = qml quick
 CONFIG += c++11 link_pkgconfig
 
-PKGCONFIG += qtappfw-hvac
+PKGCONFIG += qtappfw-hvac qtappfw-vehicle-signals
 
 HEADERS += \
     translator.h
