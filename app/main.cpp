@@ -20,6 +20,8 @@
 #include <QDebug>
 #include <hvac.h>
 #include <vehiclesignals.h>
+#include "homescreenhandler.h"
+
 
 #include "translator.h"
 
@@ -27,11 +29,22 @@ int main(int argc, char *argv[])
 {
 	setenv("QT_QUICK_CONTROLS_STYLE", "AGL", 1);
 
+	HomescreenHandler* homescreenHandler = new HomescreenHandler();
+	if (argc > 1) {
+		int orientation = strtoul(argv[1], NULL, 10);
+
+		fprintf(stderr, "Starting HVAC in tiled orientation %d\n",
+				orientation);
+		homescreenHandler->setOrientation("hvac", orientation);
+	}
+
 	QGuiApplication app(argc, argv);
+
 
 	QQmlApplicationEngine engine;
 	VehicleSignalsConfig vsConfig("hvac");
 	engine.rootContext()->setContextProperty("hvac", new HVAC(new VehicleSignals(vsConfig)));
+	engine.rootContext()->setContextProperty("homescreenHandler", homescreenHandler);
 	qmlRegisterType<Translator>("Translator", 1, 0, "Translator");
 	engine.load(QUrl(QStringLiteral("qrc:/HVAC.qml")));
 

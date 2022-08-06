@@ -148,6 +148,39 @@ ApplicationWindow {
 					}
 				}
 			}
+
+			ColumnLayout {
+				Layout.fillWidth: true
+				spacing: 20
+				ToggleButton {
+					onImage: './images/HMI_HVAC_Active.svg'
+					offImage: './images/HMI_HVAC_Inactive.svg'
+					Label {
+						anchors.centerIn: parent
+						color: parent.checked ? '#00ADDC' : '#848286'
+						text: translator.translate(qsTr('Split Right'), translator.language)
+						font.pixelSize: parent.height / 4
+					}
+					onCheckedChanged: {
+						console.debug('Split on the right', checked)
+						homescreenHandler.setOrientation("hvac", 2)
+					}
+				}
+				ToggleButton {
+					onImage: './images/HMI_HVAC_Active.svg'
+					offImage: './images/HMI_HVAC_Inactive.svg'
+					Label {
+						anchors.centerIn: parent
+						color: parent.checked ? '#00ADDC' : '#848286'
+						text: translator.translate(qsTr('Split Top'), translator.language)
+						font.pixelSize: parent.height / 4
+					}
+					onCheckedChanged: {
+						console.debug('Split on top', checked)
+						homescreenHandler.setOrientation("hvac", 3)
+					}
+				}
+			}
 		}
 
 		RowLayout {

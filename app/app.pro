@@ -1,16 +1,20 @@
 TEMPLATE = app
 TARGET = hvac
-QT = qml quick
+QT = qml quick dbus
 CONFIG += c++11 link_pkgconfig
+
+DBUS_INTERFACES = $$[QT_SYSROOT]/usr/share/dbus-1/interfaces/org.automotivelinux.AppLaunch.xml
 
 PKGCONFIG += qtappfw-hvac qtappfw-vehicle-signals
 
 HEADERS += \
+    homescreenhandler.h \
     translator.h
 
 SOURCES = \
     main.cpp \
-    translator.cpp
+    homescreenhandler.cpp \
+    translator.cpp \
 
 RESOURCES += \
     hvac.qrc \
